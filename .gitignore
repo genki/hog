@@ -1,3 +1,6 @@
-/libs
-/.shards
-/.crystal
+*.cmake
+.DS_Store
+/hog
+/CMakeFiles
+/CMakeCache.txt
+/Makefile
