@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <signal.h>
 #include <pthread.h>
 #include "hog.h"
 
@@ -11,7 +12,11 @@ static hog_t hog;
 void on_signal(int signo){
     switch(signo){
     case SIGINT:
-        printf("TERM signal received\n");
+        printf("INT signal received.\n");
+        kill(0, SIGTERM);
+        break;
+    case SIGTERM:
+        printf("TERM signal received.\n");
         close(hog.socket);
         break;
     }
@@ -52,6 +57,7 @@ int main(int argc, char *argv[])
     grn_ctx_init(&hog.ctx, 0);
     hog.db = grn_db_open(&hog.ctx, hog.db_path);
     signal(SIGINT, on_signal);
+    signal(SIGTERM, on_signal);
 
     // start server
     struct sockaddr_in saddr = {0}, caddr = {0};
