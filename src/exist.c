@@ -1,7 +1,7 @@
 #include "hog.h"
 
-// <cmd> {<len> <column id>} <type> <#kvs> [{<len> <key>} {<len> <value>}]...
-void hog_put(server_t *s, grn_ctx *ctx)
+// <cmd> {<len> <column id>} <type> <#keys> [{<len> <key>}]...
+void hog_exist(server_t *s, grn_ctx *ctx)
 {
     uint32_t len;
     receive(s->socket, &len, sizeof(len));
@@ -23,16 +23,9 @@ void hog_put(server_t *s, grn_ctx *ctx)
         buf = realloc(buf, len);
         receive(s->socket, buf, len);
         ntoh_buf(buf, len, type);
-        grn_id id = grn_table_add(ctx, table, buf, len, NULL);
-        receive(s->socket, &len, sizeof(len));
-        len = ntohl(len);
-        buf = realloc(buf, len);
-        receive(s->socket, buf, len);
-        ntoh_buf(buf, len, type);
-        grn_obj value;
-        GRN_OBJ_INIT(&value, GRN_BULK, 0, type);
-        grn_bulk_write(ctx, &value, buf, len);
-        grn_obj_set_value(ctx, col, id, &value, GRN_OBJ_SET);
+        grn_id id = grn_table_get(ctx, table, buf, len);
+        char flag = (id == GRN_ID_NIL ? 0 : 1);
+        submit(s->socket, &flag, 1);
     }
 cleanup:
     free(buf);

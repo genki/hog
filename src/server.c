@@ -6,8 +6,10 @@ static struct {
     char name[MAX_CMD_NAME];
     void (*handler)(server_t*, grn_ctx*);
 } cmd_handlers[] = {
-    {"GET", hog_get},
-    {"PUT", hog_put},
+    {"get", hog_get},
+    {"put", hog_put},
+    {"del", hog_del},
+    {"exist", hog_exist},
 };
 
 void* server(void *arg)

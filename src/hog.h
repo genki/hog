@@ -32,5 +32,7 @@ void hton_buf(void *buf, uint32_t len, char type);
 
 void hog_get(server_t *s, grn_ctx *ctx);
 void hog_put(server_t *s, grn_ctx *ctx);
+void hog_del(server_t *s, grn_ctx *ctx);
+void hog_exist(server_t *s, grn_ctx *ctx);
 
 #endif
