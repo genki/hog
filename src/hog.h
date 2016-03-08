@@ -30,6 +30,7 @@ int receive(int s, void *buf, ssize_t len);
 void ntoh_buf(void *buf, uint32_t len, char type);
 void hton_buf(void *buf, uint32_t len, char type);
 
+void hog_ping(server_t *s, grn_ctx *ctx);
 void hog_get(server_t *s, grn_ctx *ctx);
 void hog_put(server_t *s, grn_ctx *ctx);
 void hog_del(server_t *s, grn_ctx *ctx);

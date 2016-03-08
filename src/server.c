@@ -6,6 +6,7 @@ static struct {
     char name[MAX_CMD_NAME];
     void (*handler)(server_t*, grn_ctx*);
 } cmd_handlers[] = {
+    {"ping", hog_ping},
     {"get", hog_get},
     {"put", hog_put},
     {"del", hog_del},
