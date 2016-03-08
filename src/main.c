@@ -1,13 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <signal.h>
-#include <pthread.h>
 #include "hog.h"
 
-static hog_t hog;
+void* server(void *arg);
+extern hog_t hog;
 
 void on_signal(int signo){
     switch(signo){
@@ -54,8 +48,7 @@ int main(int argc, char *argv[])
 
     // init groonga
     grn_init();
-    grn_ctx_init(&hog.ctx, 0);
-    hog.db = grn_db_open(&hog.ctx, hog.db_path);
+    grn_set_lock_timeout(10*60*1000);
     signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
 
@@ -72,11 +65,15 @@ int main(int argc, char *argv[])
     while(1){
         int c = accept(hog.socket, (struct sockaddr*)&caddr, &len);
         if(c < 0) break;
+        pthread_t thread;
+        server_t *s = malloc(sizeof(s));
+        s->socket = c;
+        s->hog = &hog;
+        pthread_create(&thread, NULL, server, s);
+        pthread_detach(thread);
     }
 
     // clean up
-    grn_obj_close(&hog.ctx, hog.db);
-    grn_ctx_fin(&hog.ctx);
     grn_fin();
     printf("hog server successfully stopped.\n");
     return EXIT_SUCCESS;
