@@ -1,7 +1,6 @@
 #include "hog.h"
 
-void* server(void *arg);
-extern hog_t hog;
+hog_t hog;
 
 void on_signal(int signo){
     switch(signo){
