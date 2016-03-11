@@ -58,9 +58,15 @@ int main(int argc, char *argv[])
     saddr.sin_family = PF_INET;
     saddr.sin_addr.s_addr = INADDR_ANY;
     saddr.sin_port = htons(hog.port);
+    int opt = 1;
+    setsockopt(hog.socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    setsockopt(hog.socket, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
     bind(hog.socket, (struct sockaddr*)&saddr, len);
     listen(hog.socket, hog.max_conn);
     printf("hog server started listening port #%d...\n", hog.port);
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     while(1){
         int c = accept(hog.socket, (struct sockaddr*)&caddr, &len);
         if(c < 0) break;
@@ -68,8 +74,7 @@ int main(int argc, char *argv[])
         server_t *s = malloc(sizeof(s));
         s->socket = c;
         s->hog = &hog;
-        pthread_create(&thread, NULL, server, s);
-        pthread_detach(thread);
+        pthread_create(&thread, &attr, server, s);
     }
 
     // clean up

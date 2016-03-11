@@ -23,23 +23,26 @@ void hog_get(server_t *s, grn_ctx *ctx)
         buf = realloc(buf, len);
         receive(s->socket, buf, len);
         ntoh_buf(buf, len, types[0]);
-        grn_id id = grn_table_get(ctx, table, buf, len);
-        grn_obj *value = grn_obj_get_value(ctx, col, id, NULL);
-        if(value->header.type == GRN_BULK){
-            void *bulk = GRN_BULK_HEAD(value);
-            uint32_t blen = GRN_BULK_VSIZE(value);
-            uint32_t nblen = htonl(blen);
-            submit(s->socket, &nblen, sizeof(nblen));
-            hton_buf(bulk, blen, types[1]);
-            submit(s->socket, bulk, blen);
-        }else{
-            char zero = 0;
-            submit(s->socket, &zero, 1);
-        }
-        GRN_OBJ_FIN(ctx, value);
+        /*grn_id id = grn_table_get(ctx, table, buf, len);
+        if(id != GRN_ID_NIL){
+            grn_obj *value = grn_obj_get_value(ctx, col, id, NULL);
+            if(value->header.type == GRN_BULK){
+                void *bulk = GRN_BULK_HEAD(value);
+                uint32_t blen = GRN_BULK_VSIZE(value);
+                uint32_t nblen = htonl(blen);
+                submit(s->socket, &nblen, sizeof(nblen));
+                hton_buf(bulk, blen, types[1]);
+                submit(s->socket, bulk, blen);
+                GRN_OBJ_FIN(ctx, value);
+                continue;
+            }
+            GRN_OBJ_FIN(ctx, value);
+        }*/
+        uint32_t zero = htonl(0);
+        submit(s->socket, &zero, sizeof(zero));
     }
 cleanup:
     free(buf);
-    GRN_OBJ_FIN(ctx, table);
-    GRN_OBJ_FIN(ctx, col);
+    //GRN_OBJ_FIN(ctx, table);
+    //GRN_OBJ_FIN(ctx, col);
 }

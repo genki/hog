@@ -2,8 +2,10 @@
 #define __HOG_H__
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
@@ -35,5 +37,6 @@ void hog_get(server_t *s, grn_ctx *ctx);
 void hog_put(server_t *s, grn_ctx *ctx);
 void hog_del(server_t *s, grn_ctx *ctx);
 void hog_exist(server_t *s, grn_ctx *ctx);
+void hog_fin(server_t *s, grn_ctx *ctx);
 
 #endif

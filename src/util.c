@@ -4,7 +4,8 @@ int submit(int s, const void *buf, ssize_t len)
 {
     while(len > 0){
         int ret = send(s, buf, len, 0);
-        if(ret < 0) return ret;
+        if(ret == 0) return EBADF;
+        else if(ret < 0) return ret;
         buf += ret;
         len -= ret;
     }
@@ -24,7 +25,8 @@ int receive(int s, void *buf, ssize_t len)
 {
     while(len > 0){
         int ret = recv(s, buf, len, 0);
-        if(ret < 0) return ret;
+        if(ret == 0) return EBADF;
+        else if(ret < 0) return ret;
         buf += ret;
         len -= ret;
     }
