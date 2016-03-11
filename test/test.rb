@@ -61,8 +61,8 @@ ths = []
         #submit s, "Foo.bar", cmds["put"], types, "hello" => "world"
 
         now = Time.now
-        2000.times do
-            submit s, "Foo.bar", cmds["get"], types, ["hello"]
+        10000.times do
+            submit s, "Foo.bar", cmds["get"], types, ["hello#{idx}"]
             len = read(s, 4).unpack('N').first
             read(s, len)
         end

@@ -27,6 +27,4 @@ void hog_del(server_t *s, grn_ctx *ctx)
     }
 cleanup:
     free(buf);
-    //GRN_OBJ_FIN(ctx, table);
-    //GRN_OBJ_FIN(ctx, col);
 }
