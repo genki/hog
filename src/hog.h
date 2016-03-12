@@ -38,5 +38,6 @@ void hog_put(server_t *s, grn_ctx *ctx);
 void hog_del(server_t *s, grn_ctx *ctx);
 void hog_exist(server_t *s, grn_ctx *ctx);
 void hog_fin(server_t *s, grn_ctx *ctx);
+void hog_count(server_t *s, grn_ctx *ctx);
 
 #endif

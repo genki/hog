@@ -12,6 +12,7 @@ static struct {
     {"del", hog_del},
     {"exist", hog_exist},
     {"fin", hog_fin},
+    {"count", hog_count},
 };
 
 void* server(void *arg)
@@ -29,7 +30,7 @@ void* server(void *arg)
     struct timeval to;
     to.tv_sec = 10;
     to.tv_usec = 0;
-    setsockopt(s->socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&to, sizeof(to));
+    //setsockopt(s->socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&to, sizeof(to));
     setsockopt(s->socket, SOL_SOCKET, SO_SNDTIMEO, (char*)&to, sizeof(to));
     // send the command list
     if(submit(s->socket, &num_handlers, 1) != 0){
@@ -45,7 +46,7 @@ void* server(void *arg)
         char cmd;
         if(receive(s->socket, &cmd, 1) != 0){
             switch(errno){
-            case EBADF: case ENOENT: break;
+            case EBADF: case ENOENT: case EAGAIN: break;
             default: perror("Failed to recv cmd."); break;
             }
             loop = 0;

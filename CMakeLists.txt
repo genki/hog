@@ -1,7 +1,12 @@
 project(hog)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 2.8.12)
 file(GLOB SRC "src/*")
 add_executable(hog ${SRC})
 target_link_libraries(hog groonga)
+set(CMAKE_C_FLAGS "--std=gnu99 ${CMAKE_C_FLAGS}")
+find_package(Threads)
+target_link_libraries(hog ${CMAKE_THREAD_LIBS_INIT})
+install(TARGETS hog DESTINATION ./bin)
 
 add_custom_target(run ./hog tmp/db/test DEPENDS hog)
+add_custom_target(docker docker build -t docker.s21g.com/hog .)
