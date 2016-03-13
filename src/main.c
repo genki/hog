@@ -81,7 +81,11 @@ int main(int argc, char *argv[])
         server_t *s = malloc(sizeof(s));
         s->socket = c;
         s->hog = &hog;
-        pthread_create(&thread, &attr, server, s);
+        if(pthread_create(&thread, &attr, server, s) != 0){
+            fprintf(stderr, "Failed to spawn thread\n");
+            free(s);
+            close(c);
+        }
     }
     pthread_attr_destroy(&attr);
     pthread_exit(NULL);
