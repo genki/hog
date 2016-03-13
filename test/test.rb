@@ -53,28 +53,24 @@ ths = []
         end
 
         # ping
-        #write s, [cmds["ping"]].pack('c') # PUT
-        #pong = read(s, 1).unpack('c').first
+        write s, [cmds["ping"]].pack('c') # PUT
+        pong = read(s, 1).unpack('c').first
         #puts "ping -> #{pong}"
 
         types = [Groonga::Type::SHORT_TEXT, Groonga::Type::TEXT]
-        #submit s, "Foo.bar", cmds["put"], types, "hello" => "world"
 
         now = Time.now
-        10000.times do
-            submit s, "Foo.bar", cmds["get"], types, ["hello#{idx}"]
+        2000.times do
+            submit s, "Foo.bar", cmds["put"], types, "hello" => "world"
+            submit s, "Foo.bar", cmds["get"], types, ["hello"]
             len = read(s, 4).unpack('N').first
             read(s, len)
+            submit s, "Foo.bar", cmds["exist"], [types[0]], ["hello", "foo"]
+            read(s, 2).unpack('c*')
+            submit s, "Foo.bar", cmds["del"], [types[0]], ["hello"]
         end
         puts "[#{idx}] %.2f s" % (Time.now - now)
 
-        #submit s, "Foo.bar", cmds["exist"], [types[0]], ["hello", "foo"]
-        #read(s, 2).unpack('c*').each{|n| puts "exist: #{n}"}
-
-        #submit s, "Foo.bar", cmds["del"], [types[0]], ["hello"]
-        #submit s, "Foo.bar", cmds["get"], types, ["hello"]
-        #len = read(s, 4).unpack('N').first
-        #puts len
         #write s, [cmds["fin"]].pack('c')
         #s.shutdown
         s.close

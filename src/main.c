@@ -48,7 +48,8 @@ int main(int argc, char *argv[])
 
     // init groonga
     grn_init();
-    grn_set_lock_timeout(10*60*1000);
+    //grn_set_lock_timeout(10*60*1000);
+    grn_set_lock_timeout(0);
     signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
 
