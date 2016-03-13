@@ -15,6 +15,11 @@ void on_signal(int signo){
     }
 }
 
+void cleanup()
+{
+    grn_fin();
+}
+
 int main(int argc, char *argv[])
 {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -48,6 +53,7 @@ int main(int argc, char *argv[])
 
     // init groonga
     grn_init();
+    atexit(cleanup);
     grn_set_lock_timeout(3*60*1000); // 3 min
     signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
@@ -78,8 +84,6 @@ int main(int argc, char *argv[])
         pthread_create(&thread, &attr, server, s);
     }
 
-    // clean up
-    grn_fin();
     fprintf(stdout, "hog server successfully stopped.\n");
     return EXIT_SUCCESS;
 }
