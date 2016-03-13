@@ -22,4 +22,4 @@ RUN cmake .
 RUN make all install
 
 EXPOSE 18618
-ENTRYPOINT hog
+ENTRYPOINT ["hog"]

@@ -20,7 +20,7 @@ void* server(void *arg)
     int loop = 1;
     char num_handlers = sizeof(cmd_handlers)/sizeof(cmd_handlers[0]);
     server_t *s = (server_t*)arg;
-    printf("connection opening: %d\n", s->socket);
+    fprintf(stdout, "connection opening: %d\n", s->socket);
     hog_t *hog = s->hog;
     grn_ctx ctx;
     grn_ctx_init(&ctx, 0);
@@ -46,7 +46,7 @@ void* server(void *arg)
         char cmd;
         if(receive(s->socket, &cmd, 1) != 0){
             switch(errno){
-            case EBADF: case ENOENT: case EAGAIN: break;
+            case 0: case EBADF: case ENOENT: case EAGAIN: break;
             default: perror("Failed to recv cmd."); break;
             }
             loop = 0;
@@ -56,7 +56,7 @@ void* server(void *arg)
         else fprintf(stderr, "Invalid cmd: %d\n", cmd);
     }
 cleanup:
-    printf("connection closing: %d\n", s->socket);
+    fprintf(stdout, "connection closing: %d\n", s->socket);
     GRN_OBJ_FIN(&ctx, db);
     grn_ctx_fin(&ctx);
     close(s->socket);

@@ -8,8 +8,10 @@ void hog_exist(server_t *s, grn_ctx *ctx)
     len = ntohl(len);
     char *buf = malloc(len);
     receive(s->socket, buf, len);
-    grn_obj *col = grn_ctx_get(ctx, buf, len);
-    grn_obj *table = grn_column_table(ctx, col);
+    grn_obj *col, *table;
+    col = grn_ctx_get(ctx, buf, len);
+    if(grn_obj_is_table(ctx, col)) table = col;
+    else table = grn_column_table(ctx, col);
     // get key type
     char type;
     receive(s->socket, &type, 1);

@@ -10,3 +10,4 @@ install(TARGETS hog DESTINATION ./bin)
 
 add_custom_target(run ./hog tmp/db/test DEPENDS hog)
 add_custom_target(docker docker build -t docker.s21g.com/hog .)
+add_custom_target(push docker push docker.s21g.com/hog)

@@ -5,11 +5,11 @@ hog_t hog;
 void on_signal(int signo){
     switch(signo){
     case SIGINT:
-        printf("INT signal received.\n");
+        fprintf(stdout, "INT signal received.\n");
         kill(0, SIGTERM);
         break;
     case SIGTERM:
-        printf("TERM signal received.\n");
+        fprintf(stdout, "TERM signal received.\n");
         close(hog.socket);
         break;
     }
@@ -17,6 +17,7 @@ void on_signal(int signo){
 
 int main(int argc, char *argv[])
 {
+    setvbuf(stdout, NULL, _IONBF, 0);
     hog.db_path = NULL;
     hog.bind = "0.0.0.0"; 
     hog.port = 18618;
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
     setsockopt(hog.socket, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
     bind(hog.socket, (struct sockaddr*)&saddr, len);
     listen(hog.socket, hog.max_conn);
-    printf("hog server started listening port #%d...\n", hog.port);
+    fprintf(stdout, "hog server started listening port #%d...\n", hog.port);
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -79,6 +80,6 @@ int main(int argc, char *argv[])
 
     // clean up
     grn_fin();
-    printf("hog server successfully stopped.\n");
+    fprintf(stdout, "hog server successfully stopped.\n");
     return EXIT_SUCCESS;
 }
