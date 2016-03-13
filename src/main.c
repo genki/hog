@@ -83,7 +83,8 @@ int main(int argc, char *argv[])
         s->hog = &hog;
         pthread_create(&thread, &attr, server, s);
     }
-
+    pthread_attr_destroy(&attr);
+    pthread_exit(NULL);
     fprintf(stdout, "hog server successfully stopped.\n");
     return EXIT_SUCCESS;
 }
