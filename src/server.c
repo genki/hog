@@ -43,7 +43,7 @@ void* server(void *arg)
         }
     }
     while(loop){
-        char cmd;
+        unsigned char cmd;
         if(receive(s->socket, &cmd, 1) != 0){
             switch(errno){
             case 0: case EBADF: case ENOENT: case EAGAIN: break;

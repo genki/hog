@@ -1,6 +1,6 @@
 #include "hog.h"
 
-// <cmd> {<len> <column id>} <type> <#kvs> [{<len> <key>} {<len> <value>}]...
+// <cmd> {<len> <column id>} <types> <#kvs> [{<len> <key>} {<len> <value>}]...
 void hog_put(server_t *s, grn_ctx *ctx)
 {
     uint32_t len;
@@ -12,10 +12,10 @@ void hog_put(server_t *s, grn_ctx *ctx)
     col = grn_ctx_get(ctx, buf, len);
     if(grn_obj_is_table(ctx, col)) table = col;
     else table = grn_column_table(ctx, col);
-    // get key type
+    // get key and value types
     char types[2];
     receive(s->socket, types, 2);
-    // submit values for each keys
+    // receive keys and values
     uint32_t nkeys;
     receive(s->socket, &nkeys, sizeof(nkeys));
     nkeys = ntohl(nkeys);
