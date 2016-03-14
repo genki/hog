@@ -19,6 +19,8 @@ void hog_put(server_t *s, grn_ctx *ctx)
     uint32_t nkeys;
     receive(s->socket, &nkeys, sizeof(nkeys));
     nkeys = ntohl(nkeys);
+    grn_obj value;
+    GRN_OBJ_INIT(&value, GRN_BULK, 0, types[1]);
     for(uint32_t i = 0; i < nkeys; ++i){
         receive(s->socket, &len, sizeof(len));
         len = ntohl(len);
@@ -31,12 +33,11 @@ void hog_put(server_t *s, grn_ctx *ctx)
         buf = realloc(buf, len);
         receive(s->socket, buf, len);
         ntoh_buf(buf, len, types[1]);
-        grn_obj value;
-        GRN_OBJ_INIT(&value, GRN_BULK, 0, types[1]);
+        GRN_BULK_REWIND(&value);
         grn_bulk_write(ctx, &value, buf, len);
         grn_obj_set_value(ctx, col, id, &value, GRN_OBJ_SET);
-        GRN_OBJ_FIN(ctx, &value);
     }
+    GRN_OBJ_FIN(ctx, &value);
 cleanup:
     free(buf);
 }
