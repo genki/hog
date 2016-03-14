@@ -47,7 +47,10 @@ void* server(void *arg)
         if(receive(s->socket, &cmd, 1) != 0){
             switch(errno){
             case 0: case EBADF: case ENOENT: case EAGAIN: break;
-            default: perror("Failed to recv cmd."); break;
+            case ETIMEDOUT: continue;
+            default:
+                fprintf(stderr, "Failed to recv cmd: %s\n", strerror(errno));
+                break;
             }
             loop = 0;
             break;
