@@ -17,9 +17,9 @@ static struct {
 
 void* server(void *arg)
 {
-    int loop = 1;
     char num_handlers = sizeof(cmd_handlers)/sizeof(cmd_handlers[0]);
     server_t *s = (server_t*)arg;
+    s->running = 1;
     fprintf(stdout, "connection opening: %d\n", s->socket);
     hog_t *hog = s->hog;
     grn_ctx ctx;
@@ -42,7 +42,7 @@ void* server(void *arg)
             fprintf(stderr, "Failed to send cmd (%d) %s\n", i, name);
         }
     }
-    while(loop){
+    while(s->running){
         unsigned char cmd;
         if(receive(s->socket, &cmd, 1) != 0){
             switch(errno){
@@ -52,7 +52,7 @@ void* server(void *arg)
                 fprintf(stderr, "Failed to recv cmd: %s\n", strerror(errno));
                 break;
             }
-            loop = 0;
+            s->running = 0;
             break;
         }
         if(cmd < num_handlers) (cmd_handlers[cmd].handler)(s, &ctx);
@@ -60,9 +60,9 @@ void* server(void *arg)
     }
 cleanup:
     fprintf(stdout, "connection closing: %d\n", s->socket);
+    close(s->socket);
     GRN_OBJ_FIN(&ctx, db);
     grn_ctx_fin(&ctx);
-    close(s->socket);
     free(s);
     return NULL;
 }

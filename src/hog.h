@@ -22,6 +22,7 @@ typedef struct {
 typedef struct {
     hog_t *hog;
     int socket;
+    volatile int running;
 } server_t;
 
 void* server(void *arg);

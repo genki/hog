@@ -27,6 +27,6 @@ cleanup:
 // <cmd>
 void hog_fin(server_t *s, grn_ctx *ctx)
 {
-    close(s->socket);
-    s->socket = -1;
+    s->running = 0;
+    hog_ping(s, ctx);
 }
