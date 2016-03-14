@@ -15,7 +15,6 @@ typedef struct {
     const char *db_path;
     const char *bind;
     int port;
-    int num_threads;
     int max_conn;
     int socket;
 } hog_t;

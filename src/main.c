@@ -27,14 +27,12 @@ int main(int argc, char *argv[])
     hog.bind = "0.0.0.0"; 
     hog.port = 18618;
     hog.max_conn = 1024;
-    hog.num_threads = 4;
 
     // opt parse
     for(int i = 1; i < argc; ++i){
         const char *arg = argv[i];
         if(arg[0] == '-'){
             switch(arg[1]){
-            case 't': hog.num_threads = atoi(argv[++i]); break;
             case 'b': hog.bind = argv[++i]; break;
             case 'p': hog.port = atoi(argv[++i]); break;
             case 'c': hog.max_conn = atoi(argv[++i]); break;
