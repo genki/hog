@@ -19,6 +19,8 @@ void hog_get(server_t *s, grn_ctx *ctx)
     uint32_t nkeys;
     receive(s->socket, &nkeys, sizeof(nkeys));
     nkeys = ntohl(nkeys);
+    grn_obj value;
+    GRN_VOID_INIT(&value);
     for(uint32_t i = 0; i < nkeys; ++i){
         receive(s->socket, &len, sizeof(len));
         len = ntohl(len);
@@ -27,10 +29,11 @@ void hog_get(server_t *s, grn_ctx *ctx)
         ntoh_buf(buf, len, types[0]);
         grn_id id = grn_table_get(ctx, table, buf, len);
         if(id != GRN_ID_NIL){
-            grn_obj *value = grn_obj_get_value(ctx, col, id, NULL);
-            if(value->header.type == GRN_BULK){
-                void *bulk = GRN_BULK_HEAD(value);
-                uint32_t blen = GRN_BULK_VSIZE(value);
+            GRN_BULK_REWIND(&value);
+            grn_obj_get_value(ctx, col, id, &value);
+            if(ctx->rc == GRN_SUCCESS){
+                void *bulk = GRN_BULK_HEAD(&value);
+                uint32_t blen = GRN_BULK_VSIZE(&value);
                 uint32_t nblen = htonl(blen);
                 submit(s->socket, &nblen, sizeof(nblen));
                 hton_buf(bulk, blen, types[1]);
@@ -41,6 +44,7 @@ void hog_get(server_t *s, grn_ctx *ctx)
         uint32_t zero = htonl(0);
         submit(s->socket, &zero, sizeof(zero));
     }
+    GRN_OBJ_FIN(ctx, &value);
 cleanup:
     free(buf);
 }
