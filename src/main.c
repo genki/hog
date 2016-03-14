@@ -4,20 +4,17 @@ hog_t hog;
 
 void on_signal(int signo){
     switch(signo){
-    case SIGINT:
-        fprintf(stdout, "INT signal received.\n");
-        kill(0, SIGTERM);
-        break;
-    case SIGTERM:
-        fprintf(stdout, "TERM signal received.\n");
-        close(hog.socket);
-        break;
+    case SIGINT: fprintf(stdout, "INT signal received.\n"); break;
+    case SIGTERM: fprintf(stdout, "TERM signal received.\n"); break;
+    default: return;
     }
+    close(hog.socket);
 }
 
 void cleanup()
 {
     grn_fin();
+    fprintf(stdout, "hog server successfully stopped.\n");
 }
 
 int main(int argc, char *argv[])
@@ -86,7 +83,7 @@ int main(int argc, char *argv[])
         }
     }
     pthread_attr_destroy(&attr);
+    fprintf(stdout, "waiting for threads...\n");
     pthread_exit(NULL);
-    fprintf(stdout, "hog server successfully stopped.\n");
     return EXIT_SUCCESS;
 }
