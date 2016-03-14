@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
-#include <groonga/groonga.h>
+#include <groonga.h>
 
 typedef struct {
     const char *db_path;
