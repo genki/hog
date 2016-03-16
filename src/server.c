@@ -13,6 +13,8 @@ static struct {
     {"exist", hog_exist},
     {"fin", hog_fin},
     {"count", hog_count},
+    {"fetch", hog_fetch},
+    {"store", hog_store},
 };
 
 void* server(void *arg)
