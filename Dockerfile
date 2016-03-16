@@ -18,6 +18,7 @@ RUN mkdir -p hog
 WORKDIR hog
 ADD src ./src
 ADD CMakeLists.txt ./
+ADD cmake ./cmake
 RUN cmake .
 RUN make all install
 
