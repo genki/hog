@@ -1,5 +1,6 @@
 #ifndef __HOG_H__
 #define __HOG_H__
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>

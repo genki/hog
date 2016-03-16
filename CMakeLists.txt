@@ -1,5 +1,6 @@
-project(hog)
 cmake_minimum_required(VERSION 2.8.12)
+project(hog)
+set(PROJECT_VERSION "0.1.1")
 include(FindPkgConfig)
 pkg_check_modules(GROONGA REQUIRED "groonga")
 include_directories(${GROONGA_INCLUDE_DIRS})
@@ -15,3 +16,6 @@ install(TARGETS hog DESTINATION ./bin)
 add_custom_target(run ./hog tmp/db/test DEPENDS hog)
 add_custom_target(docker docker build -t docker.s21g.com/hog .)
 add_custom_target(push docker push docker.s21g.com/hog)
+
+configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake
+  ${CMAKE_SOURCE_DIR}/src/config.h)

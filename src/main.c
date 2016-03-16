@@ -33,6 +33,9 @@ int main(int argc, char *argv[])
             case 'b': hog.bind = argv[++i]; break;
             case 'p': hog.port = atoi(argv[++i]); break;
             case 'c': hog.max_conn = atoi(argv[++i]); break;
+            case 'v':
+              fprintf(stdout, "hog-%s\n", PROJECT_VERSION);
+              exit(EXIT_SUCCESS);
             default:
                 fprintf(stderr, "Unknown option -%s\n", &arg[1]);
                 exit(EXIT_FAILURE);
