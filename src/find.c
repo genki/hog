@@ -22,15 +22,15 @@ void hog_find(server_t *s, grn_ctx *ctx)
     grn_obj value;
     GRN_OBJ_INIT(&value, GRN_BULK, 0, types[1]);
     for(uint32_t i = 0; i < nvalues; ++i){
+        receive(s->socket, &len, sizeof(len));
+        len = ntohl(len);
+        buf = realloc(buf, len);
+        receive(s->socket, buf, len);
         if(col == NULL){
             uint32_t zero = htonl(0);
             submit(s->socket, &zero, sizeof(zero));
             continue;
         }
-        receive(s->socket, &len, sizeof(len));
-        len = ntohl(len);
-        buf = realloc(buf, len);
-        receive(s->socket, buf, len);
         ntoh_buf(buf, len, types[1]);
         GRN_BULK_REWIND(&value);
         grn_bulk_write(ctx, &value, buf, len);
