@@ -1,4 +1,4 @@
-FROM ubuntu:trusty-20151009
+FROM ubuntu:trusty
 MAINTAINER Genki Takiuchi <genki@s21g.com>
 
 # groonga
