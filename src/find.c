@@ -42,12 +42,11 @@ void hog_find(server_t *s, grn_ctx *ctx)
         grn_table_cursor *cursor = grn_table_cursor_open(ctx, result,
                 NULL, 0, NULL, 0, 0, 1, 0); 
         if(cursor && grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL){
-            grn_id *id;
-            grn_table_cursor_get_key(ctx, cursor, (void**)&id);
+            void *key;
+            grn_table_cursor_get_key(ctx, cursor, &key);
             buf = realloc(buf, GRN_TABLE_MAX_KEY_SIZE);
-            len = grn_table_get_key(ctx, table, *id,
+            len = grn_table_get_key(ctx, table, *(grn_id*)key,
                     buf, GRN_TABLE_MAX_KEY_SIZE);
-            grn_table_cursor_close(ctx, cursor);
             hton_buf(buf, len, types[0]);
             uint32_t nlen = htonl(len);
             submit(s->socket, &nlen, sizeof(nlen));
@@ -56,6 +55,7 @@ void hog_find(server_t *s, grn_ctx *ctx)
             uint32_t zero = htonl(0);
             submit(s->socket, &zero, sizeof(zero));
         }
+        if(cursor) grn_table_cursor_close(ctx, cursor);
         GRN_OBJ_FIN(ctx, result);
     }
     GRN_OBJ_FIN(ctx, &value);
