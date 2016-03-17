@@ -10,10 +10,10 @@ void hog_ping(server_t *s, grn_ctx *ctx)
 void hog_count(server_t *s, grn_ctx *ctx)
 {
     uint32_t len;
-    receive(s->socket, &len, sizeof(len));
+    HOG_RECV(s, &len, sizeof(len), return);
     len = ntohl(len);
     char *buf = malloc(len);
-    receive(s->socket, buf, len);
+    HOG_RECV(s, buf, len, goto cleanup);
     grn_obj *col, *table;
     col = grn_ctx_get(ctx, buf, len);
     if(grn_obj_is_table(ctx, col)) table = col;

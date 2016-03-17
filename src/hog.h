@@ -12,6 +12,11 @@
 #include <pthread.h>
 #include <groonga.h>
 
+#define HOG_RECV(s, buf, len, fail) \
+    if(receive((s)->socket, (buf), (len)) != 0) fail
+#define HOG_SEND(s, buf, len, fail) \
+    if(submit((s)->socket, (buf), (len)) != 0) fail
+
 typedef struct {
     const char *db_path;
     const char *bind;

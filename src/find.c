@@ -6,29 +6,29 @@
 void hog_find(server_t *s, grn_ctx *ctx)
 {
     uint32_t len;
-    receive(s->socket, &len, sizeof(len));
+    HOG_RECV(s, &len, sizeof(len), return);
     len = ntohl(len);
     char *buf = malloc(len);
-    receive(s->socket, buf, len);
+    HOG_RECV(s, buf, len, goto cleanup);
     grn_obj *col = grn_ctx_get(ctx, buf, len);
     grn_obj *table = grn_column_table(ctx, col);
     // get key and value types
     char types[2];
-    receive(s->socket, types, 2);
+    HOG_RECV(s, types, 2, goto cleanup);
     // get values and submit keys
     uint32_t nvalues;
-    receive(s->socket, &nvalues, sizeof(nvalues));
+    HOG_RECV(s, &nvalues, sizeof(nvalues), goto cleanup);
     nvalues = ntohl(nvalues);
     grn_obj value;
     GRN_OBJ_INIT(&value, GRN_BULK, 0, types[1]);
     for(uint32_t i = 0; i < nvalues; ++i){
-        receive(s->socket, &len, sizeof(len));
+        HOG_RECV(s, &len, sizeof(len), goto value_fin);
         len = ntohl(len);
         buf = realloc(buf, len);
-        receive(s->socket, buf, len);
+        HOG_RECV(s, buf, len, goto value_fin);
         if(col == NULL){
             uint32_t zero = htonl(0);
-            submit(s->socket, &zero, sizeof(zero));
+            HOG_SEND(s, &zero, sizeof(zero), goto value_fin);
             continue;
         }
         ntoh_buf(buf, len, types[1]);
@@ -54,15 +54,16 @@ void hog_find(server_t *s, grn_ctx *ctx)
                     buf, GRN_TABLE_MAX_KEY_SIZE);
             hton_buf(buf, len, types[0]);
             uint32_t nlen = htonl(len);
-            submit(s->socket, &nlen, sizeof(nlen));
-            submit(s->socket, buf, len);
+            HOG_SEND(s, &nlen, sizeof(nlen), goto value_fin);
+            HOG_SEND(s, buf, len, goto value_fin);
         }else{
             uint32_t zero = htonl(0);
-            submit(s->socket, &zero, sizeof(zero));
+            HOG_SEND(s, &zero, sizeof(zero), goto value_fin);
         }
         if(cursor) grn_table_cursor_close(ctx, cursor);
         GRN_OBJ_FIN(ctx, result);
     }
+value_fin:
     GRN_OBJ_FIN(ctx, &value);
 cleanup:
     free(buf);
