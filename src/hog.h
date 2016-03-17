@@ -42,5 +42,6 @@ void hog_fin(server_t *s, grn_ctx *ctx);
 void hog_count(server_t *s, grn_ctx *ctx);
 void hog_fetch(server_t *s, grn_ctx *ctx);
 void hog_store(server_t *s, grn_ctx *ctx);
+void hog_find(server_t *s, grn_ctx *ctx);
 
 #endif

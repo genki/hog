@@ -1,0 +1,64 @@
+#include "hog.h"
+
+// Find keys that records have specified values 
+// <cmd> {<len> <column id>} <key type> <value type>
+// <#values> [<len> <value>]...
+void hog_find(server_t *s, grn_ctx *ctx)
+{
+    uint32_t len;
+    receive(s->socket, &len, sizeof(len));
+    len = ntohl(len);
+    char *buf = malloc(len);
+    receive(s->socket, buf, len);
+    grn_obj *col = grn_ctx_get(ctx, buf, len);
+    grn_obj *table = grn_column_table(ctx, col);
+    // get key and value types
+    char types[2];
+    receive(s->socket, types, 2);
+    // get values and submit keys
+    uint32_t nvalues;
+    receive(s->socket, &nvalues, sizeof(nvalues));
+    nvalues = ntohl(nvalues);
+    grn_obj value;
+    GRN_OBJ_INIT(&value, GRN_BULK, 0, types[1]);
+    for(uint32_t i = 0; i < nvalues; ++i){
+        receive(s->socket, &len, sizeof(len));
+        len = ntohl(len);
+        buf = realloc(buf, len);
+        receive(s->socket, buf, len);
+        ntoh_buf(buf, len, types[1]);
+        GRN_BULK_REWIND(&value);
+        grn_bulk_write(ctx, &value, buf, len);
+        grn_obj *query, *var;
+        GRN_EXPR_CREATE_FOR_QUERY(ctx, table, query, var);
+        grn_expr_append_obj(ctx, query, var, GRN_OP_PUSH, 1);
+        grn_expr_append_const(ctx, query, col, GRN_OP_PUSH, 1);
+        grn_expr_append_op(ctx, query, GRN_OP_GET_VALUE, 2);
+        grn_expr_append_const(ctx, query, &value, GRN_OP_PUSH, 1);
+        grn_expr_append_op(ctx, query, GRN_OP_EQUAL, 2);
+        grn_obj *result = grn_table_select(ctx, table, query, NULL, GRN_OP_OR);
+        GRN_OBJ_FIN(ctx, query);
+        GRN_OBJ_FIN(ctx, var);
+        grn_table_cursor *cursor = grn_table_cursor_open(ctx, result,
+                NULL, 0, NULL, 0, 0, 1, 0); 
+        if(cursor && grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL){
+            grn_id *id;
+            grn_table_cursor_get_key(ctx, cursor, (void**)&id);
+            buf = realloc(buf, GRN_TABLE_MAX_KEY_SIZE);
+            len = grn_table_get_key(ctx, table, *id,
+                    buf, GRN_TABLE_MAX_KEY_SIZE);
+            grn_table_cursor_close(ctx, cursor);
+            hton_buf(buf, len, types[0]);
+            uint32_t nlen = htonl(len);
+            submit(s->socket, &nlen, sizeof(nlen));
+            submit(s->socket, buf, len);
+        }else{
+            uint32_t zero = htonl(0);
+            submit(s->socket, &zero, sizeof(zero));
+        }
+        GRN_OBJ_FIN(ctx, result);
+    }
+    GRN_OBJ_FIN(ctx, &value);
+cleanup:
+    free(buf);
+}
