@@ -45,7 +45,6 @@ void* server(void *arg)
     to.tv_sec = 10;
     to.tv_usec = 0;
     setsockopt(s->socket, SOL_SOCKET, SO_SNDTIMEO, (char*)&to, sizeof(to));
-    setsockopt(s->socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&to, sizeof(to));
     // send the command list
     if(submit(s->socket, &num_handlers, 1) != 0){
         fprintf(stderr, "Failed to send num handlers\n");
