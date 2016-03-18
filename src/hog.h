@@ -17,6 +17,8 @@
 #define HOG_SEND(s, buf, len, fail) \
     if(submit((s)->socket, (buf), (len)) != 0) fail
 
+struct server_t;
+
 typedef struct {
     const char *db_path;
     const char *bind;
@@ -24,12 +26,17 @@ typedef struct {
     int max_conn;
     int socket;
     int verbose;
+    struct server_t **servers;
+    pthread_t *threads;
+    pthread_mutex_t mutex;
+    int nservers;
 } hog_t;
 
-typedef struct {
+typedef struct server_t {
     hog_t *hog;
     int socket;
     volatile int running;
+    int thread_id;
 } server_t;
 
 void* server(void *arg);

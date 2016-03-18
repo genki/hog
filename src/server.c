@@ -1,6 +1,8 @@
 #include "hog.h"
 #define MAX_CMD_NAME 16
 
+__thread server_t *server_self;
+
 // command table
 static struct {
     char name[MAX_CMD_NAME];
@@ -21,7 +23,7 @@ static struct {
 void* server(void *arg)
 {
     char num_handlers = sizeof(cmd_handlers)/sizeof(cmd_handlers[0]);
-    server_t *s = (server_t*)arg;
+    server_t *s = server_self = (server_t*)arg;
     s->running = 1;
     fprintf(stdout, "connection opening: %d\n", s->socket);
     hog_t *hog = s->hog;
@@ -85,12 +87,20 @@ void* server(void *arg)
         }
     }
 db_fin:
-    fprintf(stdout, "connection closing: %d\n", s->socket);
     GRN_OBJ_FIN(&ctx, db);
 ctx_fin:
     grn_ctx_fin(&ctx);
 cleanup:
+    fprintf(stdout, "connection closing: %d\n", s->socket);
     close(s->socket);
+    pthread_mutex_lock(&hog->mutex);
+    pthread_t *self = &hog->threads[s->thread_id];
+    pthread_t *tail = &hog->threads[--hog->nservers];
+    *self = *tail;
+    server_t *s_tail = hog->servers[hog->nservers];
+    s_tail->thread_id = s->thread_id;
+    hog->servers[s->thread_id] = s_tail;
+    pthread_mutex_unlock(&hog->mutex);
     free(s);
     return NULL;
 }
