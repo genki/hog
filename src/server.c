@@ -74,6 +74,10 @@ void* server(void *arg)
         }
         retry_count = 0;
         if(cmd < num_handlers){
+            if(hog->verbose){
+                fprintf(stdout, "exec %s: %d\n",
+                        cmd_handlers[cmd].name, s->socket);
+            }
             (cmd_handlers[cmd].handler)(s, &ctx);
         }else{
             fprintf(stderr, "Invalid cmd: %d\n", cmd);
