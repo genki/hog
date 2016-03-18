@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
     hog.bind = "0.0.0.0"; 
     hog.port = 18618;
     hog.max_conn = 1024;
+    hog.verbose = 0;
 
     // opt parse
     for(int i = 1; i < argc; ++i){
@@ -33,6 +34,7 @@ int main(int argc, char *argv[])
             case 'b': hog.bind = argv[++i]; break;
             case 'p': hog.port = atoi(argv[++i]); break;
             case 'c': hog.max_conn = atoi(argv[++i]); break;
+            case 'V': hog.verbose = 1; break;
             case 'v':
               fprintf(stdout, "hog-%s\n", PROJECT_VERSION);
               exit(EXIT_SUCCESS);

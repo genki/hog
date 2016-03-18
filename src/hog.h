@@ -23,6 +23,7 @@ typedef struct {
     int port;
     int max_conn;
     int socket;
+    int verbose;
 } hog_t;
 
 typedef struct {
