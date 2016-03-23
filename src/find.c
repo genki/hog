@@ -8,7 +8,7 @@ void hog_find(server_t *s, grn_ctx *ctx)
     uint32_t len;
     HOG_RECV(s, &len, sizeof(len), return);
     len = ntohl(len);
-    char *buf = malloc(len);
+    char *buf = hog_alloc(NULL, len);
     HOG_RECV(s, buf, len, goto cleanup);
     grn_obj *col = grn_ctx_get(ctx, buf, len);
     grn_obj *table = grn_column_table(ctx, col);
@@ -24,7 +24,7 @@ void hog_find(server_t *s, grn_ctx *ctx)
     for(uint32_t i = 0; i < nvalues; ++i){
         HOG_RECV(s, &len, sizeof(len), goto value_fin);
         len = ntohl(len);
-        buf = hog_realloc(buf, len);
+        buf = hog_alloc(buf, len);
         HOG_RECV(s, buf, len, goto value_fin);
         if(col == NULL){
             uint32_t zero = htonl(0);
@@ -49,7 +49,7 @@ void hog_find(server_t *s, grn_ctx *ctx)
         if(cursor && grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL){
             void *key;
             grn_table_cursor_get_key(ctx, cursor, &key);
-            buf = hog_realloc(buf, GRN_TABLE_MAX_KEY_SIZE);
+            buf = hog_alloc(buf, GRN_TABLE_MAX_KEY_SIZE);
             len = grn_table_get_key(ctx, table, *(grn_id*)key,
                     buf, GRN_TABLE_MAX_KEY_SIZE);
             hton_buf(buf, len, types[0]);

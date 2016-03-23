@@ -35,8 +35,9 @@ typedef struct {
 typedef struct server_t {
     hog_t *hog;
     int socket;
-    volatile int running;
     int thread_id;
+    volatile int running;
+    volatile int killed;
 } server_t;
 
 void* server(void *arg);
@@ -45,7 +46,7 @@ int submit_chunk(int s, const char *buf);
 int receive(int s, void *buf, ssize_t len);
 void ntoh_buf(void *buf, uint32_t len, char type);
 void hton_buf(void *buf, uint32_t len, char type);
-void* hog_realloc(void *buf, ssize_t len);
+void* hog_alloc(void *buf, ssize_t len);
 
 void hog_ping(server_t *s, grn_ctx *ctx);
 void hog_get(server_t *s, grn_ctx *ctx);

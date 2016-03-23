@@ -8,7 +8,7 @@ void hog_fetch(server_t *s, grn_ctx *ctx)
     uint32_t len;
     HOG_RECV(s, &len, sizeof(len), return);
     len = ntohl(len);
-    char *buf = malloc(len);
+    char *buf = hog_alloc(NULL, len);
     HOG_RECV(s, buf, len, goto cleanup);
     grn_obj *table = grn_ctx_get(ctx, buf, len);
     // get key type, len and key
@@ -16,7 +16,7 @@ void hog_fetch(server_t *s, grn_ctx *ctx)
     HOG_RECV(s, &type, 1, goto cleanup);
     HOG_RECV(s, &len, sizeof(len), goto cleanup);
     len = ntohl(len);
-    buf = hog_realloc(buf, len);
+    buf = hog_alloc(buf, len);
     HOG_RECV(s, buf, len, goto cleanup);
     ntoh_buf(buf, len, type);
     grn_id id = grn_table_get(ctx, table, buf, len);
@@ -30,7 +30,7 @@ void hog_fetch(server_t *s, grn_ctx *ctx)
         HOG_RECV(s, &type, 1, goto value_fin);
         HOG_RECV(s, &len, sizeof(len), goto value_fin);
         len = ntohl(len);
-        buf = hog_realloc(buf, len);
+        buf = hog_alloc(buf, len);
         HOG_RECV(s, buf, len, goto value_fin);
         if(id != GRN_ID_NIL){
             grn_obj *col = grn_obj_column(ctx, table, buf, len);

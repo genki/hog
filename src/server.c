@@ -91,7 +91,7 @@ ctx_fin:
     grn_ctx_fin(&ctx);
 cleanup:
     fprintf(stdout, "connection closing: %d\n", s->socket);
-    close(s->socket);
+    if(!s->killed) close(s->socket);
     pthread_mutex_lock(&hog->mutex);
     pthread_t *self = &hog->threads[s->thread_id];
     pthread_t *tail = &hog->threads[--hog->nservers];

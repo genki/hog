@@ -6,7 +6,7 @@ void hog_del(server_t *s, grn_ctx *ctx)
     uint32_t len;
     HOG_RECV(s, &len, sizeof(len), return);
     len = ntohl(len);
-    char *buf = malloc(len);
+    char *buf = hog_alloc(NULL, len);
     HOG_RECV(s, buf, len, goto cleanup);
     grn_obj *col, *table;
     col = grn_ctx_get(ctx, buf, len);
@@ -22,7 +22,7 @@ void hog_del(server_t *s, grn_ctx *ctx)
     for(uint32_t i = 0; i < nkeys; ++i){
         HOG_RECV(s, &len, sizeof(len), goto cleanup);
         len = ntohl(len);
-        buf = hog_realloc(buf, len);
+        buf = hog_alloc(buf, len);
         HOG_RECV(s, buf, len, goto cleanup);
         ntoh_buf(buf, len, type);
         grn_table_delete(ctx, table, buf, len);

@@ -12,7 +12,7 @@ void hog_count(server_t *s, grn_ctx *ctx)
     uint32_t len;
     HOG_RECV(s, &len, sizeof(len), return);
     len = ntohl(len);
-    char *buf = malloc(len);
+    char *buf = hog_alloc(NULL, len);
     HOG_RECV(s, buf, len, goto cleanup);
     grn_obj *col, *table;
     col = grn_ctx_get(ctx, buf, len);

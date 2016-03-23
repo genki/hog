@@ -57,16 +57,16 @@ void hton_buf(void *buf, uint32_t len, char type)
     }
 }
 
-void *hog_realloc(void *buf, ssize_t len)
+void *hog_alloc(void *buf, ssize_t len)
 {
     void *next = realloc(buf, len);
     if(next == NULL){
+        if(len == 0) return next;
         fprintf(stderr, "Failed to realloc %ld bytes.\n", len);
         free(buf);
         next = malloc(len);
         if(next == NULL){
             fprintf(stderr, "Failed to malloc %ld bytes.\n", len);
-            abort();
         }
     }
     return next;

@@ -14,12 +14,14 @@ void on_signal(int signo){
 
 void on_close(int USR1)
 {
+    server_self->killed = 1;
     close(server_self->socket);
 }
 
 void cleanup()
 {
     grn_fin();
+    pthread_mutex_destroy(&hog.mutex);
     free(hog.servers);
     free(hog.threads);
     fprintf(stdout, "hog server successfully stopped.\n");
@@ -95,12 +97,13 @@ int main(int argc, char *argv[])
         int c = accept(hog.socket, (struct sockaddr*)&caddr, &len);
         if(c < 0) break;
         pthread_mutex_lock(&hog.mutex);
-        int thread_id = hog.nservers++;
-        server_t *s = hog.servers[thread_id] = malloc(sizeof(server_t));
+        int tid = hog.nservers++;
+        server_t *s = hog.servers[tid] = hog_alloc(NULL, sizeof(server_t));
         s->socket = c;
         s->hog = &hog;
-        s->thread_id = thread_id;
-        if(pthread_create(&hog.threads[thread_id], NULL, server, s) != 0){
+        s->thread_id = tid;
+        s->killed = 0;
+        if(pthread_create(&hog.threads[tid], NULL, server, s) != 0){
             fprintf(stderr, "Failed to spawn thread %d\n", s->thread_id);
             close(c);
             free(s);
@@ -110,14 +113,13 @@ int main(int argc, char *argv[])
     }
 
 cleanup:
-    pthread_mutex_destroy(&hog.mutex);
-    pthread_attr_destroy(&attr);
     fprintf(stdout, "waiting for %d servers...\n", hog.nservers);
     pthread_mutex_lock(&hog.mutex);
     for(int i = 0; i < hog.nservers; ++i){
         pthread_kill(hog.threads[i], SIGUSR1);
     }
     pthread_mutex_unlock(&hog.mutex);
+    pthread_attr_destroy(&attr);
     pthread_exit(NULL);
     return EXIT_SUCCESS;
 }
