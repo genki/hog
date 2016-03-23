@@ -16,7 +16,7 @@ void hog_store(server_t *s, grn_ctx *ctx)
     HOG_RECV(s, &type, 1, goto cleanup);
     HOG_RECV(s, &len, sizeof(len), goto cleanup);
     len = ntohl(len);
-    buf = realloc(buf, len);
+    buf = hog_realloc(buf, len);
     HOG_RECV(s, buf, len, goto cleanup);
     ntoh_buf(buf, len, type);
     grn_id id = grn_table_add(ctx, table, buf, len, NULL);
@@ -30,12 +30,12 @@ void hog_store(server_t *s, grn_ctx *ctx)
         HOG_RECV(s, &type, 1, goto value_fin);
         HOG_RECV(s, &len, sizeof(len), goto value_fin);
         len = ntohl(len);
-        buf = realloc(buf, len);
+        buf = hog_realloc(buf, len);
         HOG_RECV(s, buf, len, goto value_fin);
         grn_obj *col = grn_obj_column(ctx, table, buf, len);
         HOG_RECV(s, &len, sizeof(len), goto value_fin);
         len = ntohl(len);
-        buf = realloc(buf, len);
+        buf = hog_realloc(buf, len);
         HOG_RECV(s, buf, len, goto value_fin);
         ntoh_buf(buf, len, type);
         grn_obj_reinit(ctx, &value, type, 0);

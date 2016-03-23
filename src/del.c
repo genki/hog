@@ -22,7 +22,7 @@ void hog_del(server_t *s, grn_ctx *ctx)
     for(uint32_t i = 0; i < nkeys; ++i){
         HOG_RECV(s, &len, sizeof(len), goto cleanup);
         len = ntohl(len);
-        buf = realloc(buf, len);
+        buf = hog_realloc(buf, len);
         HOG_RECV(s, buf, len, goto cleanup);
         ntoh_buf(buf, len, type);
         grn_table_delete(ctx, table, buf, len);

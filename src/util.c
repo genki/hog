@@ -33,7 +33,8 @@ int receive(int s, void *buf, ssize_t len)
     return 0;
 }
 
-void ntoh_buf(void *buf, uint32_t len, char type){
+void ntoh_buf(void *buf, uint32_t len, char type)
+{
     switch(type){
     case GRN_DB_INT16: case GRN_DB_UINT16:
         *(uint16_t*)buf = ntohs(*(uint16_t*)buf);
@@ -44,7 +45,8 @@ void ntoh_buf(void *buf, uint32_t len, char type){
     }
 }
 
-void hton_buf(void *buf, uint32_t len, char type){
+void hton_buf(void *buf, uint32_t len, char type)
+{
     switch(type){
     case GRN_DB_INT16: case GRN_DB_UINT16:
         *(uint16_t*)buf = htons(*(uint16_t*)buf);
@@ -53,4 +55,19 @@ void hton_buf(void *buf, uint32_t len, char type){
         *(uint32_t*)buf = htonl(*(uint32_t*)buf);
         break;
     }
+}
+
+void *hog_realloc(void *buf, ssize_t len)
+{
+    void *next = realloc(buf, len);
+    if(next == NULL){
+        fprintf(stderr, "Failed to realloc %ld bytes.\n", len);
+        free(buf);
+        next = malloc(len);
+        if(next == NULL){
+            fprintf(stderr, "Failed to malloc %ld bytes.\n", len);
+            abort();
+        }
+    }
+    return next;
 }

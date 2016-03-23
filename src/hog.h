@@ -45,6 +45,7 @@ int submit_chunk(int s, const char *buf);
 int receive(int s, void *buf, ssize_t len);
 void ntoh_buf(void *buf, uint32_t len, char type);
 void hton_buf(void *buf, uint32_t len, char type);
+void* hog_realloc(void *buf, ssize_t len);
 
 void hog_ping(server_t *s, grn_ctx *ctx);
 void hog_get(server_t *s, grn_ctx *ctx);
