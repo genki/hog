@@ -34,12 +34,12 @@ void* server(void *arg)
         fprintf(stderr, "Failed to init ctx: %d\n", rc);
         goto cleanup;
     }
-    // open db
-    grn_obj *db = grn_db_open(&ctx, hog->db_path);
-    if(db == NULL){
-        fprintf(stderr, "Failed to open db: %s\n", hog->db_path);
+    rc = grn_ctx_use(&ctx, hog->db);
+    if(rc != GRN_SUCCESS){
+        fprintf(stderr, "Failed to use db: %d\n", rc);
         goto ctx_fin;
     }
+
     // setup socket
     struct timeval to;
     to.tv_sec = 10;
@@ -85,8 +85,6 @@ void* server(void *arg)
             break;
         }
     }
-db_fin:
-    GRN_OBJ_FIN(&ctx, db);
 ctx_fin:
     grn_ctx_fin(&ctx);
 cleanup:

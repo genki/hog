@@ -20,16 +20,13 @@
 struct server_t;
 
 typedef struct {
-    const char *db_path;
-    const char *bind;
-    int port;
-    int max_conn;
     int socket;
     int verbose;
     struct server_t **servers;
     pthread_t *threads;
     pthread_mutex_t mutex;
     int nservers;
+    grn_obj *db;
 } hog_t;
 
 typedef struct server_t {
