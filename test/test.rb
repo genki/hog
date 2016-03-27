@@ -67,7 +67,7 @@ ths = []
             read(s, len)
             submit s, "Foo.bar", cmds["exist"], [types[0]], ["hello", "foo"]
             read(s, 2).unpack('c*')
-            submit s, "Foo.bar", cmds["del"], [types[0]], ["hello"]
+            submit s, "Foo", cmds["del"], [types[0]], ["hello"]
         end
         puts "[#{idx}] %.2f s" % (Time.now - now)
 

@@ -8,10 +8,8 @@ void hog_del(server_t *s, grn_ctx *ctx)
     len = ntohl(len);
     char *buf = hog_alloc(NULL, len);
     HOG_RECV(s, buf, len, goto cleanup);
-    grn_obj *col, *table;
-    col = grn_ctx_get(ctx, buf, len);
-    if(grn_obj_is_table(ctx, col)) table = col;
-    else table = grn_column_table(ctx, col);
+    grn_obj *table = grn_ctx_get(ctx, buf, len);
+    if(!grn_obj_is_table(ctx, table)) table = NULL;
     // get key type
     char type;
     HOG_RECV(s, &type, 1, goto cleanup);
@@ -24,8 +22,10 @@ void hog_del(server_t *s, grn_ctx *ctx)
         len = ntohl(len);
         buf = hog_alloc(buf, len);
         HOG_RECV(s, buf, len, goto cleanup);
-        ntoh_buf(buf, len, type);
-        grn_table_delete(ctx, table, buf, len);
+        if(table){
+            ntoh_buf(buf, len, type);
+            grn_table_delete(ctx, table, buf, len);
+        }
     }
 cleanup:
     free(buf);
