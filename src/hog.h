@@ -48,6 +48,7 @@ void* hog_alloc(void *buf, ssize_t len);
 void hog_ping(server_t *s, grn_ctx *ctx);
 void hog_get(server_t *s, grn_ctx *ctx);
 void hog_put(server_t *s, grn_ctx *ctx);
+void hog_set(server_t *s, grn_ctx *ctx);
 void hog_del(server_t *s, grn_ctx *ctx);
 void hog_exist(server_t *s, grn_ctx *ctx);
 void hog_fin(server_t *s, grn_ctx *ctx);
