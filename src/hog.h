@@ -40,6 +40,7 @@ typedef struct server_t {
 void* server(void *arg);
 int submit(int s, const void *buf, ssize_t len);
 int submit_chunk(int s, const char *buf);
+int submit_one(int s);
 int receive(int s, void *buf, ssize_t len);
 void ntoh_buf(void *buf, uint32_t len, char type);
 void hton_buf(void *buf, uint32_t len, char type);

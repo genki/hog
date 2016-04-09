@@ -21,6 +21,12 @@ int submit_chunk(int s, const char *buf)
     return 0;
 }
 
+int submit_one(int s)
+{
+    const static char one = 1;
+    return submit(s, &one, 1);
+}
+
 int receive(int s, void *buf, ssize_t len)
 {
     while(len > 0){

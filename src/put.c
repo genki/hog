@@ -43,6 +43,7 @@ void put_or_set(server_t *s, grn_ctx *ctx, int set)
         grn_bulk_write(ctx, &value, buf, len);
         grn_obj_set_value(ctx, col, id, &value, GRN_OBJ_SET);
     }
+    submit_one(s->socket);
 value_fin:
     GRN_OBJ_FIN(ctx, &value);
 cleanup:

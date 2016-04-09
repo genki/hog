@@ -27,6 +27,7 @@ void hog_del(server_t *s, grn_ctx *ctx)
             grn_table_delete(ctx, table, buf, len);
         }
     }
+    submit_one(s->socket);
 cleanup:
     free(buf);
 }
