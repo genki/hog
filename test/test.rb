@@ -39,6 +39,10 @@ def submit(s, column, cmd, types, kvs)
         end
     end
 end
+def submit_w(s, column, cmd, types, kvs)
+    submit s, column, cmd, types, kvs
+    read s, 1
+end
 
 ths = []
 1.times do |idx|
@@ -61,13 +65,13 @@ ths = []
 
         now = Time.now
         2000.times do
-            submit s, "Foo.bar", cmds["put"], types, "hello" => "world"
+            submit_w s, "Foo.bar", cmds["put"], types, "hello" => "world"
             submit s, "Foo.bar", cmds["get"], types, ["hello"]
             len = read(s, 4).unpack('N').first
             read(s, len)
             submit s, "Foo.bar", cmds["exist"], [types[0]], ["hello", "foo"]
             read(s, 2).unpack('c*')
-            submit s, "Foo", cmds["del"], [types[0]], ["hello"]
+            submit_w s, "Foo", cmds["del"], [types[0]], ["hello"]
         end
         puts "[#{idx}] %.2f s" % (Time.now - now)
 
