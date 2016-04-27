@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(hog)
-set(PROJECT_VERSION "0.2.0")
+set(PROJECT_VERSION "0.3.0")
 include(FindPkgConfig)
 pkg_check_modules(GROONGA REQUIRED "groonga")
 include_directories(${GROONGA_INCLUDE_DIRS})
