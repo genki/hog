@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     // init groonga
     grn_init();
     atexit(cleanup);
-    grn_set_lock_timeout(3*60*1000); // 3 min
+    grn_set_lock_timeout(60*1000); // 60 sec
     grn_ctx ctx;
     grn_rc rc = grn_ctx_init(&ctx, 0);
     if(rc != GRN_SUCCESS){
