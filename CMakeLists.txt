@@ -15,6 +15,7 @@ install(TARGETS hog DESTINATION ./bin)
 
 add_custom_target(run ./hog -V tmp/db/test DEPENDS hog)
 add_custom_target(docker docker build -t docker.s21g.com/hog .)
+add_custom_target(build docker build --no-cache -t docker.s21g.com/hog .)
 add_custom_target(push docker push docker.s21g.com/hog)
 
 configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake

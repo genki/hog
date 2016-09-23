@@ -3,6 +3,7 @@ MAINTAINER Genki Takiuchi <genki@s21g.com>
 
 # groonga
 ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update
 RUN apt-get install -y software-properties-common
 RUN add-apt-repository -y universe
 RUN add-apt-repository -y ppa:groonga/ppa
