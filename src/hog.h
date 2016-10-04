@@ -27,6 +27,7 @@ typedef struct {
     pthread_mutex_t mutex;
     int nservers;
     grn_obj *db;
+    grn_ctx *ctx;
 } hog_t;
 
 typedef struct server_t {

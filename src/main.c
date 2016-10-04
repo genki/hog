@@ -1,6 +1,6 @@
 #include "hog.h"
 
-hog_t hog;
+hog_t hog = {0};
 extern __thread server_t *server_self;
 
 void on_signal(int signo){
@@ -20,6 +20,11 @@ void on_close(int USR1)
 
 void cleanup()
 {
+    if(hog.ctx){
+        if(hog.db) GRN_OBJ_FIN(hog.ctx, hog.db);
+        grn_ctx_fin(hog.ctx);
+        free(hog.ctx);
+    }
     grn_fin();
     pthread_mutex_destroy(&hog.mutex);
     free(hog.servers);
@@ -93,16 +98,18 @@ int main(int argc, char *argv[])
     grn_init();
     atexit(cleanup);
     grn_set_lock_timeout(60*1000); // 60 sec
-    grn_ctx ctx;
-    grn_rc rc = grn_ctx_init(&ctx, 0);
+    hog.ctx = hog_alloc(NULL, sizeof(grn_ctx));
+    grn_rc rc = grn_ctx_init(hog.ctx, 0);
     if(rc != GRN_SUCCESS){
         fprintf(stderr, "Failed to init ctx: %d\n", rc);
+        free(hog.ctx);
+        hog.ctx = NULL;
         goto cleanup;
     }
-    hog.db = grn_db_open(&ctx, db_path);
+    hog.db = grn_db_open(hog.ctx, db_path);
     if(hog.db == NULL){
         fprintf(stderr, "Failed to open db: %s\n", db_path);
-        goto ctx_fin;
+        goto cleanup;
     }
 
     // accept loop
@@ -125,10 +132,6 @@ int main(int argc, char *argv[])
         pthread_mutex_unlock(&hog.mutex);
     }
 
-db_fin:
-    GRN_OBJ_FIN(&ctx, hog.db);
-ctx_fin:
-    grn_ctx_fin(&ctx);
 cleanup:
     fprintf(stdout, "waiting for %d servers...\n", hog.nservers);
     pthread_mutex_lock(&hog.mutex);
