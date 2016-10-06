@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
     // init groonga
     grn_init();
     atexit(cleanup);
-    grn_set_lock_timeout(60*1000); // 60 sec
     hog.ctx = hog_alloc(NULL, sizeof(grn_ctx));
     grn_rc rc = grn_ctx_init(hog.ctx, 0);
     if(rc != GRN_SUCCESS){
