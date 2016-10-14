@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     const char *address = "0.0.0.0"; 
     int port = 18618;
     int max_conn = 1024;
+    int lock_clear = 0;
     hog.verbose = 0;
 
     // opt parse
@@ -50,6 +51,7 @@ int main(int argc, char *argv[])
             case 'p': port = atoi(argv[++i]); break;
             case 'c': max_conn = atoi(argv[++i]); break;
             case 'V': hog.verbose = 1; break;
+            case 'u': lock_clear = 1; break;
             case 'v':
               fprintf(stdout, "hog-%s\n", PROJECT_VERSION);
               exit(EXIT_SUCCESS);
@@ -109,6 +111,11 @@ int main(int argc, char *argv[])
     if(hog.db == NULL){
         fprintf(stderr, "Failed to open db: %s\n", db_path);
         goto cleanup;
+    }
+
+    // lock_clear
+    if(lock_clear){
+        grn_obj_clear_lock(hog.ctx, hog.db);
     }
 
     // accept loop
