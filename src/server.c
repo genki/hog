@@ -27,8 +27,10 @@ void* server(void *arg)
     char num_handlers = sizeof(cmd_handlers)/sizeof(cmd_handlers[0]);
     server_t *s = server_self = (server_t*)arg;
     s->running = 1;
-    fprintf(stdout, "connection opening: %d\n", s->socket);
     hog_t *hog = s->hog;
+    if(hog->verbose){
+        fprintf(stdout, "connection opening: %d\n", s->socket);
+    }
     grn_rc rc;
     grn_ctx ctx;
     rc = grn_ctx_init(&ctx, 0);
@@ -93,7 +95,9 @@ cleanup:
     if(s->killed){
         fprintf(stdout, "connection closed: %d\n", s->socket);
     }else{
-        fprintf(stdout, "connection closing: %d\n", s->socket);
+        if(hog->verbose){
+            fprintf(stdout, "connection closing: %d\n", s->socket);
+        }
         close(s->socket);
     }
     pthread_mutex_lock(&hog->mutex);
