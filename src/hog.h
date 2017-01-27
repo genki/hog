@@ -67,5 +67,6 @@ void hog_fetch(server_t *s, grn_ctx *ctx);
 void hog_store(server_t *s, grn_ctx *ctx);
 void hog_find(server_t *s, grn_ctx *ctx);
 void hog_query(server_t *s, grn_ctx *ctx);
+void hog_each(server_t *s, grn_ctx *ctx);
 
 #endif

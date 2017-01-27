@@ -20,6 +20,7 @@ static struct {
     {"find", hog_find},
     {"set", hog_set},
     {"query", hog_query},
+    {"each", hog_each},
 };
 
 void* server(void *arg)

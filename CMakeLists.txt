@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(hog)
-set(PROJECT_VERSION "0.4.0")
+set(PROJECT_VERSION "0.5.0")
 include(FindPkgConfig)
 pkg_check_modules(GROONGA REQUIRED "groonga")
 include_directories(${GROONGA_INCLUDE_DIRS})
@@ -14,9 +14,9 @@ target_link_libraries(hog ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS hog DESTINATION ./bin)
 
 add_custom_target(run ./hog -V tmp/db/test DEPENDS hog)
-add_custom_target(docker docker build -t docker.s21g.com/hog .)
-add_custom_target(build docker build --no-cache -t docker.s21g.com/hog .)
-add_custom_target(push docker push docker.s21g.com/hog)
+add_custom_target(docker docker build -t asia.gcr.io/shot/hog .)
+add_custom_target(build docker build --no-cache -t asia.gcr.io/hog .)
+add_custom_target(push gcloud docker -- push asia.gcr.io/shot/hog)
 
 configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake
   ${CMAKE_SOURCE_DIR}/src/config.h)
