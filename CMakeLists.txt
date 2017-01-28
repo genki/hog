@@ -14,9 +14,6 @@ target_link_libraries(hog ${CMAKE_THREAD_LIBS_INIT})
 install(TARGETS hog DESTINATION ./bin)
 
 add_custom_target(run ./hog -V tmp/db/test DEPENDS hog)
-add_custom_target(docker docker build -t asia.gcr.io/shot/hog .)
-add_custom_target(build docker build --no-cache -t asia.gcr.io/hog .)
-add_custom_target(push gcloud docker -- push asia.gcr.io/shot/hog)
 
 configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake
   ${CMAKE_SOURCE_DIR}/src/config.h)
