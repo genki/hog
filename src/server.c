@@ -36,12 +36,14 @@ void* server(void *arg)
     grn_ctx ctx;
     rc = grn_ctx_init(&ctx, 0);
     if(rc != GRN_SUCCESS){
-        fprintf(stderr, "Failed to init ctx: %d\n", rc);
+        fprintf(stderr, "Failed to init ctx: (%d) %s\n",
+            rc, grn_rc_to_string(rc));
         goto cleanup;
     }
     rc = grn_ctx_use(&ctx, hog->db);
     if(rc != GRN_SUCCESS){
-        fprintf(stderr, "Failed to use db: %d\n", rc);
+        fprintf(stderr, "Failed to use db: (%d) %s\n",
+            rc, grn_rc_to_string(rc));
         goto ctx_fin;
     }
 

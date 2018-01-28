@@ -102,7 +102,8 @@ int main(int argc, char *argv[])
     hog.ctx = hog_alloc(NULL, sizeof(grn_ctx));
     grn_rc rc = grn_ctx_init(hog.ctx, 0);
     if(rc != GRN_SUCCESS){
-        fprintf(stderr, "Failed to init ctx: %d\n", rc);
+        fprintf(stderr, "Failed to init ctx: (%d) %s\n",
+            rc, grn_rc_to_string(rc));
         free(hog.ctx);
         hog.ctx = NULL;
         goto cleanup;
