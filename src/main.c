@@ -130,8 +130,10 @@ int main(int argc, char *argv[])
         s->hog = &hog;
         s->thread_id = tid;
         s->killed = 0;
-        if(pthread_create(&hog.threads[tid], NULL, server, s) != 0){
-            fprintf(stderr, "Failed to spawn thread %d\n", s->thread_id);
+        int ret = pthread_create(&hog.threads[tid], NULL, server, s);
+        if(ret != 0){
+            fprintf(stderr, "Failed to spawn thread %d (#%d)\n",
+                s->thread_id, hog.nservers);
             close(c);
             free(s);
             hog.nservers--;
