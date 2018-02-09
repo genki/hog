@@ -37,6 +37,8 @@ int main(int argc, char *argv[])
     setvbuf(stdout, NULL, _IONBF, 0);
     const char *db_path = NULL;
     const char *address = "0.0.0.0"; 
+    const char *log_path = "/dev/null";
+    const char *log_level = NULL;
     int port = 18618;
     int max_conn = 1024;
     int lock_clear = 0;
@@ -52,6 +54,8 @@ int main(int argc, char *argv[])
             case 'c': max_conn = atoi(argv[++i]); break;
             case 'V': hog.verbose = 1; break;
             case 'u': lock_clear = 1; break;
+            case 'l': log_path = argv[++i]; break;
+            case 'L': log_level = argv[++i]; break;
             case 'v':
               fprintf(stdout, "hog-%s\n", PROJECT_VERSION);
               exit(EXIT_SUCCESS);
@@ -95,6 +99,17 @@ int main(int argc, char *argv[])
     signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
     signal(SIGUSR1, on_close);
+
+    // setup logger
+    grn_default_logger_set_path(log_path);
+    if (log_level) {
+      grn_log_level level = GRN_LOG_DEFAULT_LEVEL;
+      if (!grn_log_level_parse(log_level, &level)){
+        fprintf(stderr, "Failed to parse log level: <%s>\n", log_level);
+        exit(EXIT_FAILURE);
+      }
+      grn_default_logger_set_max_level(level);
+    }
 
     // init groonga
     grn_init();
