@@ -1,4 +1,4 @@
-FROM groonga/groonga:7.1.1
+FROM groonga/groonga:8.0.0
 
 RUN apk --no-cache add cmake
 WORKDIR /usr/src
