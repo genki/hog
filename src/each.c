@@ -25,7 +25,7 @@ void hog_each(server_t *s, grn_ctx *ctx)
     // open cursor
     grn_table_cursor *cursor = grn_table_cursor_open(ctx, table,
             NULL, 0, NULL, 0, offset, limit, GRN_CURSOR_BY_ID); 
-    while(grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL){
+    if(cursor) while(grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL){
         void *key;
         uint32_t blen = grn_table_cursor_get_key(ctx, cursor, (void**)&key);
         uint32_t nblen = htonl(blen);
@@ -36,7 +36,7 @@ void hog_each(server_t *s, grn_ctx *ctx)
     uint32_t last = htonl(0xFFFFFFFF);
     HOG_SEND(s, &last, sizeof(last), goto cursor_fin);
 cursor_fin:
-    grn_table_cursor_close(ctx, cursor);
+    if(cursor) grn_table_cursor_close(ctx, cursor);
 cleanup:
     free(buf);
 }
