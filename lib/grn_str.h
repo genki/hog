@@ -19,7 +19,7 @@
 #pragma once
 
 #include "grn.h"
-#include <groonga/nfkc.h>
+//#include <groonga/nfkc.h>
 
 #ifdef __cplusplus
 extern "C" {
