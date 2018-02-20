@@ -7,3 +7,5 @@
 /install_manifest.txt
 /src/config.h
 /cmake_install.cmake
+*.o
+*.ok
