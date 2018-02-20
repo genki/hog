@@ -47,5 +47,3 @@
 #include "groonga/type.h"
 #include "groonga/util.h"
 #include "groonga/window_function.h"
-#include "groonga/windows.h"
-#include "groonga/windows_event_logger.h"

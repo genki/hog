@@ -68,7 +68,7 @@
 /* #undef GRN_WITH_MRUBY */
 
 /* compile with nfkc.c */
-#define GRN_WITH_NFKC 1
+/* #define GRN_WITH_NFKC 1 */
 
 /* Use Onigmo. */
 /* #undef GRN_WITH_ONIGMO */
