@@ -10,11 +10,8 @@ OBJECTS := $(c_OBJECTS) $(cc_OBJECTS)
 CC := gcc
 CXX := g++
 
-CFLAGS := -g -O2 -fPIE -fstack-protector-strong \
-	-Wformat -Werror=format-security \
-	-I include \
-	-DHAVE_CONFIG_H=1 \
-	-DGRN_PLUGINS_DIR=\"/usr/lib/groonga/plugins\"
+CFLAGS := -g -O2 -I include -fPIE -fstack-protector-strong \
+	-Wformat -Werror=format-security
 LDFLAGS := -Wl,-Bsymbolic-functions -fPIE -pie -Wl,-z,relro -Wl,-z,now -static
 
 $(c_OBJECTS): %.o: %.c
@@ -38,10 +35,13 @@ image.ok: Dockerfile build/ok build/hog
 	docker build -t s21g/hog:longa .
 	touch image.ok
 
+push: image.ok
+	docker push s21g/hog:longa
+
+.PHONY: clean run
+
 run: build/ok
 	docker run -it --rm -p 18618:18618 -v $(CURDIR):/mnt \
 		--entrypoint build/hog hog-build -l /dev/stdout -L debug tmp/db/test
 clean:
 	rm -f $(OBJECTS) build/hog
-
-.PHONY: clean run
