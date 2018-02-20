@@ -13,6 +13,8 @@ hog_SOURCES := $(shell find src -type f -name "*.c")
 c_OBJECTS := $(lib_c_SOURCES:.c=.o) $(hog_SOURCES:.c=.o)
 cc_OBJECTS := $(lib_cc_SOURCES:.cpp=.o)
 OBJECTS := $(c_OBJECTS) $(cc_OBJECTS)
+CC := gcc
+CXX := g++
 
 CFLAGS := -g -O2 -fPIE -fstack-protector-strong \
 	-Wformat -Werror=format-security \
@@ -21,11 +23,11 @@ CFLAGS := -g -O2 -fPIE -fstack-protector-strong \
 LDFLAGS := -Wl,-Bsymbolic-functions -fPIE -pie -Wl,-z,relro -Wl,-z,now -static
 
 $(c_OBJECTS): %.o: %.c
-	gcc -c -I include $(CFLAGS) -o $@ $<
+	$(CC) -c -I include $(CFLAGS) -o $@ $<
 $(cc_OBJECTS): %.o: %.cpp
-	g++ -c -I include $(CFLAGS) -o $@ $<
+	$(CXX) -c -I include $(CFLAGS) -o $@ $<
 
 hog: $(OBJECTS)
-	g++ $(LDFLAGS) $^ -o $@
+	$(CXX) $(LDFLAGS) $^ -o $@
 
 .PHONY: clean
