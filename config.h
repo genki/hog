@@ -1,8 +1,5 @@
-/* config.h.  Generated from config.h.in by configure.  */
-/* config.h.in.  Generated from configure.ac by autoheader.  */
-
-/* Define if building universal (internal helper macro) */
-/* #undef AC_APPLE_UNIVERSAL_BUILD */
+#ifndef CONFIG_H
+#define CONFIG_H
 
 /* "specified configure options" */
 #define CONFIGURE_OPTIONS " '--prefix=/usr' '--without-onigmo' '--without-pcre' '--disable-maintainer-mode' '--disable-dependency-tracking' '--disable-groonga-httpd' '--disable-documenta' '--disable-zeromq' 'CFLAGS=-g -O2 -fPIE -fstack-protector-strong -Wformat -Werror=format-security' 'LDFLAGS=-Wl,-Bsymbolic-functions -fPIE -pie -Wl,-z,relro -Wl,-z,now' 'CPPFLAGS=-Wdate-time -D_FORTIFY_SOURCE=2' 'CXXFLAGS=-g -O2 -fPIE -fstack-protector-strong -Wformat -Werror=format-security'"
@@ -341,3 +338,4 @@
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */
+#endif

@@ -1,4 +1,5 @@
 #include "hog.h"
+#define PROJECT_VERSION "0.6.0"
 
 hog_t hog = {0};
 extern __thread server_t *server_self;

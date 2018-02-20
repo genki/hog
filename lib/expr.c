@@ -18,7 +18,7 @@
 #include "grn.h"
 #include "grn_db.h"
 #include "grn_ctx_impl.h"
-#include "grn_ctx_impl_mrb.h"
+//#include "grn_ctx_impl_mrb.h"
 #include <string.h>
 #include "grn_ii.h"
 #include "grn_geo.h"
@@ -28,7 +28,7 @@
 #include "grn_util.h"
 #include "grn_report.h"
 #include "grn_mrb.h"
-#include "mrb/mrb_expr.h"
+//#include "mrb/mrb_expr.h"
 
 #ifdef GRN_WITH_ONIGMO
 # define GRN_SUPPORT_REGEXP
