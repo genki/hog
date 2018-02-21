@@ -99,8 +99,8 @@ command_schema_output_value_type(grn_ctx *ctx, grn_obj *value_type)
 
 static void
 command_schema_output_command(grn_ctx *ctx,
-                           const char *command_name,
-                           grn_obj *arguments)
+                              const char *command_name,
+                              grn_obj *arguments)
 {
   grn_ctx_output_map_open(ctx, "command", 3);
 
@@ -964,7 +964,7 @@ command_schema_column_command_collect_arguments(grn_ctx *ctx,
         GRN_TEXT_PUT(ctx, &sources, name, name_size);
       }
       GRN_TEXT_PUTC(ctx, &sources, '\0');
-      ADD("sources", GRN_TEXT_VALUE(&sources));
+      ADD("source", GRN_TEXT_VALUE(&sources));
       GRN_OBJ_FIN(ctx, &sources);
     }
     GRN_OBJ_FIN(ctx, &source_ids);

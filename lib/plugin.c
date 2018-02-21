@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2012-2016 Brazil
+  Copyright(C) 2012-2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -1290,6 +1290,15 @@ grn_plugin_proc_get_var_by_offset(grn_ctx *ctx, grn_user_data *user_data,
   return grn_proc_get_var_by_offset(ctx, user_data, offset);
 }
 
+grn_obj *
+grn_plugin_proc_get_caller(grn_ctx *ctx, grn_user_data *user_data)
+{
+  grn_obj *caller = NULL;
+  GRN_API_ENTER;
+  grn_proc_get_info(ctx, user_data, NULL, NULL, &caller);
+  GRN_API_RETURN(caller);
+}
+
 const char *
 grn_plugin_win32_base_dir(void)
 {
@@ -1384,4 +1393,14 @@ grn_plugin_command_create(grn_ctx *ctx,
   proc = grn_proc_create(ctx, name, name_size, GRN_PROC_COMMAND,
                          func, NULL, NULL, n_vars, vars);
   return proc;
+}
+
+
+int64_t
+grn_plugin_proc_get_value_int64(grn_ctx *ctx,
+                                grn_obj *value,
+                                int64_t default_value_raw,
+                                const char *context)
+{
+  return grn_proc_get_value_int64(ctx, value, default_value_raw, context);
 }

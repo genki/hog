@@ -186,6 +186,9 @@ GRN_API grn_obj *grn_plugin_proc_get_var_by_offset(grn_ctx *ctx,
                                                    grn_user_data *user_data,
                                                    unsigned int offset);
 
+GRN_API grn_obj *grn_plugin_proc_get_caller(grn_ctx *ctx,
+                                            grn_user_data *user_data);
+
 /* Deprecated since 5.0.9. Use grn_plugin_windows_base_dir() instead. */
 GRN_API const char *grn_plugin_win32_base_dir(void);
 GRN_API const char *grn_plugin_windows_base_dir(void);
@@ -208,6 +211,11 @@ GRN_API grn_obj *grn_plugin_command_create(grn_ctx *ctx,
                                            unsigned int n_vars,
                                            grn_expr_var *vars);
 
+
+GRN_API int64_t grn_plugin_proc_get_value_int64(grn_ctx *ctx,
+                                                grn_obj *value,
+                                                int64_t default_value_raw,
+                                                const char *context);
 
 #ifdef __cplusplus
 }

@@ -135,6 +135,18 @@ GRN_API grn_posting *grn_index_cursor_next(grn_ctx *ctx, grn_obj *ic, grn_id *ti
       grn_id id;\
       while ((id = grn_table_cursor_next((ctx), cursor))) {
 
+#define GRN_TABLE_EACH_BEGIN_MIN(ctx, table, cursor, id,\
+                                 min, min_size, flags) do {\
+  if ((table)) {\
+    grn_table_cursor *cursor;\
+    cursor = grn_table_cursor_open((ctx), (table),\
+                                   (min), (min_size),\
+                                   NULL, 0,\
+                                   0, -1, (flags));\
+    if (cursor) {\
+      grn_id id;\
+      while ((id = grn_table_cursor_next((ctx), cursor))) {
+
 #define GRN_TABLE_EACH_END(ctx, cursor)\
       }\
       grn_table_cursor_close((ctx), cursor);\
@@ -221,6 +233,13 @@ GRN_API unsigned int grn_table_get_subrecs(grn_ctx *ctx, grn_obj *table,
 GRN_API grn_obj *grn_table_tokenize(grn_ctx *ctx, grn_obj *table,
                                     const char *str, unsigned int str_len,
                                     grn_obj *buf, grn_bool addp);
+
+GRN_API grn_rc grn_table_apply_expr(grn_ctx *ctx,
+                                    grn_obj *table,
+                                    grn_obj *output_column,
+                                    grn_obj *expr);
+
+GRN_API grn_id grn_table_find_reference_object(grn_ctx *ctx, grn_obj *table);
 
 #ifdef __cplusplus
 }

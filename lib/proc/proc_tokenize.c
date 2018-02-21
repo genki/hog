@@ -264,8 +264,11 @@ command_table_tokenize(grn_ctx *ctx, int nargs, grn_obj **args, grn_user_data *u
     }
 
     lexicon = grn_ctx_get(ctx, GRN_TEXT_VALUE(table_name), GRN_TEXT_LEN(table_name));
-
     if (!lexicon) {
+      GRN_PLUGIN_ERROR(ctx, GRN_INVALID_ARGUMENT,
+                       "[table_tokenize] nonexistent lexicon: <%.*s>",
+                       (int)GRN_TEXT_LEN(table_name),
+                       GRN_TEXT_VALUE(table_name));
       return NULL;
     }
 
@@ -296,17 +299,17 @@ command_table_tokenize(grn_ctx *ctx, int nargs, grn_obj **args, grn_user_data *u
     {
       grn_obj tokens;
       GRN_VALUE_FIX_SIZE_INIT(&tokens, GRN_OBJ_VECTOR, GRN_ID_NIL);
-    if (GRN_TEXT_LEN(mode_name) == 0 || MODE_NAME_EQUAL("GET")) {
-      tokenize(ctx, lexicon, string, GRN_TOKEN_GET, flags, &tokens);
-      output_tokens(ctx, &tokens, lexicon, index_column);
-    } else if (MODE_NAME_EQUAL("ADD")) {
-      tokenize(ctx, lexicon, string, GRN_TOKEN_ADD, flags, &tokens);
-      output_tokens(ctx, &tokens, lexicon, index_column);
-    } else {
-      GRN_PLUGIN_ERROR(ctx, GRN_INVALID_ARGUMENT,
-                       "[table_tokenize] invalid mode: <%.*s>",
-                       (int)GRN_TEXT_LEN(mode_name), GRN_TEXT_VALUE(mode_name));
-    }
+      if (GRN_TEXT_LEN(mode_name) == 0 || MODE_NAME_EQUAL("GET")) {
+        tokenize(ctx, lexicon, string, GRN_TOKEN_GET, flags, &tokens);
+        output_tokens(ctx, &tokens, lexicon, index_column);
+      } else if (MODE_NAME_EQUAL("ADD")) {
+        tokenize(ctx, lexicon, string, GRN_TOKEN_ADD, flags, &tokens);
+        output_tokens(ctx, &tokens, lexicon, index_column);
+      } else {
+        GRN_PLUGIN_ERROR(ctx, GRN_INVALID_ARGUMENT,
+                         "[table_tokenize] invalid mode: <%.*s>",
+                         (int)GRN_TEXT_LEN(mode_name), GRN_TEXT_VALUE(mode_name));
+      }
       GRN_OBJ_FIN(ctx, &tokens);
     }
 #undef MODE_NAME_EQUAL

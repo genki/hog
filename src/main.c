@@ -1,4 +1,5 @@
 #define PROJECT_VERSION "0.6.0"
+#define GROONGA_VERSION "8.0.0"
 #include "hog.h"
 
 hog_t hog = {0};
@@ -58,7 +59,8 @@ int main(int argc, char *argv[])
             case 'l': log_path = argv[++i]; break;
             case 'L': log_level = argv[++i]; break;
             case 'v':
-              fprintf(stdout, "hog-%s\n", PROJECT_VERSION);
+              fprintf(stdout, "hog-%s with Groonga-%s\n",
+                  PROJECT_VERSION, GROONGA_VERSION);
               exit(EXIT_SUCCESS);
             default:
                 fprintf(stderr, "Unknown option -%s\n", &arg[1]);

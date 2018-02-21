@@ -328,6 +328,7 @@ func_highlight(grn_ctx *ctx, int nargs, grn_obj **args,
                                          default_open_tag, default_open_tag_length,
                                          default_close_tag, default_close_tag_length);
       }
+      grn_obj_unlink(ctx, keywords);
     }
   }
 #undef N_REQUIRED_ARGS
@@ -373,6 +374,7 @@ func_highlight_full(grn_ctx *ctx, int nargs, grn_obj **args,
                                            nargs - N_REQUIRED_ARGS,
                                            string, keywords,
                                            use_html_escape);
+      grn_obj_unlink(ctx, keywords);
     }
   }
 
@@ -421,19 +423,26 @@ func_highlight_html_create_keywords_table(grn_ctx *ctx, grn_obj *expression)
   if (condition) {
     size_t i, n_keywords;
     grn_obj current_keywords;
-    GRN_PTR_INIT(&current_keywords, GRN_OBJ_VECTOR, GRN_ID_NIL);
+    GRN_TEXT_INIT(&current_keywords, GRN_OBJ_VECTOR);
     grn_expr_get_keywords(ctx, condition, &current_keywords);
 
-    n_keywords = GRN_BULK_VSIZE(&current_keywords) / sizeof(grn_obj *);
+    n_keywords = grn_vector_size(ctx, &current_keywords);
     for (i = 0; i < n_keywords; i++) {
-      grn_obj *keyword;
-      keyword = GRN_PTR_VALUE_AT(&current_keywords, i);
-      grn_table_add(ctx, keywords,
-                    GRN_TEXT_VALUE(keyword),
-                    GRN_TEXT_LEN(keyword),
+      const char *keyword;
+      unsigned int keyword_size;
+      keyword_size = grn_vector_get_element(ctx,
+                                            &current_keywords,
+                                            i,
+                                            &keyword,
+                                            NULL,
+                                            NULL);
+      grn_table_add(ctx,
+                    keywords,
+                    keyword,
+                    keyword_size,
                     NULL);
     }
-    grn_obj_unlink(ctx, &current_keywords);
+    GRN_OBJ_FIN(ctx, &current_keywords);
   }
 
   return keywords;

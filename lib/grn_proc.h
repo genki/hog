@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2009-2016 Brazil
+  Copyright(C) 2009-2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,8 @@ extern "C" {
 #define GRN_SELECT_DEFAULT_OUTPUT_COLUMNS  "_id, _key, *"
 
 #define GRN_SELECT_INTERNAL_VAR_CONDITION     "$condition"
+#define GRN_SELECT_INTERNAL_VAR_CONDITION_LEN           \
+  (sizeof(GRN_SELECT_INTERNAL_VAR_CONDITION) - 1)
 
 void grn_proc_init_from_env(void);
 
@@ -50,6 +52,7 @@ void grn_proc_init_fuzzy_search(grn_ctx *ctx);
 void grn_proc_init_highlight(grn_ctx *ctx);
 void grn_proc_init_highlight_full(grn_ctx *ctx);
 void grn_proc_init_highlight_html(grn_ctx *ctx);
+void grn_proc_init_in_records(grn_ctx *ctx);
 void grn_proc_init_lock_acquire(grn_ctx *ctx);
 void grn_proc_init_lock_clear(grn_ctx *ctx);
 void grn_proc_init_lock_release(grn_ctx *ctx);
@@ -58,6 +61,10 @@ void grn_proc_init_object_inspect(grn_ctx *ctx);
 void grn_proc_init_object_list(grn_ctx *ctx);
 void grn_proc_init_object_remove(grn_ctx *ctx);
 void grn_proc_init_query_expand(grn_ctx *ctx);
+void grn_proc_init_query_log_flags_get(grn_ctx *ctx);
+void grn_proc_init_query_log_flags_set(grn_ctx *ctx);
+void grn_proc_init_query_log_flags_add(grn_ctx *ctx);
+void grn_proc_init_query_log_flags_remove(grn_ctx *ctx);
 void grn_proc_init_schema(grn_ctx *ctx);
 void grn_proc_init_select(grn_ctx *ctx);
 void grn_proc_init_snippet(grn_ctx *ctx);
@@ -82,6 +89,15 @@ const char *grn_proc_option_value_string(grn_ctx *ctx,
 grn_content_type grn_proc_option_value_content_type(grn_ctx *ctx,
                                                     grn_obj *option,
                                                     grn_content_type default_value);
+grn_operator grn_proc_option_value_mode(grn_ctx *ctx,
+                                        grn_obj *option,
+                                        grn_operator default_mode,
+                                        const char *context);
+
+int64_t grn_proc_get_value_int64(grn_ctx *ctx,
+                                 grn_obj *value,
+                                 int64_t default_value_raw,
+                                 const char *context);
 
 void grn_proc_output_object_name(grn_ctx *ctx, grn_obj *obj);
 void grn_proc_output_object_id_name(grn_ctx *ctx, grn_id id);
@@ -123,6 +139,10 @@ grn_rc grn_proc_syntax_expand_query(grn_ctx *ctx,
                                     grn_expr_flags flags,
                                     const char *query_expander_name,
                                     unsigned int query_expander_name_len,
+                                    const char *term_column_name,
+                                    unsigned int term_column_name_len,
+                                    const char *expanded_term_column_name,
+                                    unsigned int expanded_term_column_name_len,
                                     grn_obj *expanded_query,
                                     const char *error_message_tag);
 

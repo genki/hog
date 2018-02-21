@@ -1,5 +1,5 @@
 /*
-  Copyright(C) 2009-2016 Brazil
+  Copyright(C) 2009-2018 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -274,22 +274,6 @@ GRN_API grn_rc grn_set_default_match_escalation_threshold(long long int threshol
 
 GRN_API int grn_get_lock_timeout(void);
 GRN_API grn_rc grn_set_lock_timeout(int timeout);
-
-/* cache */
-#define GRN_CACHE_DEFAULT_MAX_N_ENTRIES 100
-typedef struct _grn_cache grn_cache;
-
-GRN_API grn_cache *grn_cache_open(grn_ctx *ctx);
-GRN_API grn_rc grn_cache_close(grn_ctx *ctx, grn_cache *cache);
-
-GRN_API grn_rc grn_cache_current_set(grn_ctx *ctx, grn_cache *cache);
-GRN_API grn_cache *grn_cache_current_get(grn_ctx *ctx);
-
-GRN_API grn_rc grn_cache_set_max_n_entries(grn_ctx *ctx,
-                                           grn_cache *cache,
-                                           unsigned int n);
-GRN_API unsigned int grn_cache_get_max_n_entries(grn_ctx *ctx,
-                                                 grn_cache *cache);
 
 /* grn_encoding */
 
@@ -625,7 +609,8 @@ typedef enum {
   GRN_OP_JSON_PUT,
   GRN_OP_GET_MEMBER,
   GRN_OP_REGEXP,
-  GRN_OP_FUZZY
+  GRN_OP_FUZZY,
+  GRN_OP_QUORUM
 } grn_operator;
 
 GRN_API grn_obj *grn_obj_column(grn_ctx *ctx, grn_obj *table,
@@ -708,7 +693,8 @@ typedef enum {
 #define GRN_INFO_SUPPORT_LZO GRN_INFO_SUPPORT_LZ4
   GRN_INFO_NORMALIZER,
   GRN_INFO_TOKEN_FILTERS,
-  GRN_INFO_SUPPORT_ZSTD
+  GRN_INFO_SUPPORT_ZSTD,
+  GRN_INFO_SUPPORT_ARROW
 } grn_info_type;
 
 GRN_API grn_obj *grn_obj_get_info(grn_ctx *ctx, grn_obj *obj, grn_info_type type, grn_obj *valuebuf);
@@ -824,6 +810,7 @@ struct _grn_search_optarg {
   unsigned int scorer_args_expr_offset;
   grn_fuzzy_search_optarg fuzzy;
   grn_match_info match_info;
+  int quorum_threshold;
 };
 
 GRN_API grn_rc grn_obj_search(grn_ctx *ctx, grn_obj *obj, grn_obj *query,
@@ -840,6 +827,11 @@ GRN_API grn_rc grn_proc_set_selector_operator(grn_ctx *ctx,
                                               grn_operator selector_op);
 GRN_API grn_operator grn_proc_get_selector_operator(grn_ctx *ctx,
                                                     grn_obj *proc);
+
+GRN_API grn_rc grn_proc_set_is_stable(grn_ctx *ctx,
+                                      grn_obj *proc,
+                                      grn_bool is_stable);
+GRN_API grn_bool grn_proc_is_stable(grn_ctx *ctx, grn_obj *proc);
 
 /*-------------------------------------------------------------
  * grn_vector
@@ -1137,7 +1129,15 @@ struct _grn_query_logger {
   void (*fin)(grn_ctx *ctx, void *user_data);
 };
 
+GRN_API grn_bool grn_query_log_flags_parse(const char *string,
+                                           int string_size,
+                                           unsigned int *flags);
+
 GRN_API grn_rc grn_query_logger_set(grn_ctx *ctx, const grn_query_logger *logger);
+GRN_API void grn_query_logger_set_flags(grn_ctx *ctx, unsigned int flags);
+GRN_API void grn_query_logger_add_flags(grn_ctx *ctx, unsigned int flags);
+GRN_API void grn_query_logger_remove_flags(grn_ctx *ctx, unsigned int flags);
+GRN_API unsigned int grn_query_logger_get_flags(grn_ctx *ctx);
 
 GRN_API void grn_query_logger_put(grn_ctx *ctx, unsigned int flag,
                                   const char *mark,

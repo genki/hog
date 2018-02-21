@@ -18,6 +18,9 @@
 
 #include "grn.h"
 #include "grn_index_column.h"
+#include "grn_pat.h"
+#include "grn_dat.h"
+#include "grn_ii.h"
 
 grn_bool
 grn_obj_is_true(grn_ctx *ctx, grn_obj *obj)
@@ -139,6 +142,16 @@ grn_obj_is_column(grn_ctx *ctx, grn_obj *obj)
 }
 
 grn_bool
+grn_obj_is_scalar_column(grn_ctx *ctx, grn_obj *obj)
+{
+  if (!grn_obj_is_column(ctx, obj)) {
+    return GRN_FALSE;
+  }
+
+  return (obj->header.flags & GRN_OBJ_COLUMN_TYPE_MASK) == GRN_OBJ_COLUMN_SCALAR;
+}
+
+grn_bool
 grn_obj_is_vector_column(grn_ctx *ctx, grn_obj *obj)
 {
   if (!grn_obj_is_column(ctx, obj)) {
@@ -183,6 +196,17 @@ grn_obj_is_reference_column(grn_ctx *ctx, grn_obj *obj)
   default:
     return GRN_FALSE;
   }
+}
+
+grn_bool
+grn_obj_is_data_column(grn_ctx *ctx, grn_obj *obj)
+{
+  if (!grn_obj_is_column(ctx, obj)) {
+    return GRN_FALSE;
+  }
+
+  return obj->header.type == GRN_COLUMN_FIX_SIZE ||
+    obj->header.type == GRN_COLUMN_VAR_SIZE;
 }
 
 grn_bool
@@ -356,6 +380,16 @@ grn_obj_is_window_function_proc(grn_ctx *ctx, grn_obj *obj)
   return proc->type == GRN_PROC_WINDOW_FUNCTION;
 }
 
+grn_bool
+grn_obj_is_expr(grn_ctx *ctx, grn_obj *obj)
+{
+  if (!obj) {
+    return GRN_FALSE;
+  }
+
+  return obj->header.type == GRN_EXPR;
+}
+
 static void
 grn_db_reindex(grn_ctx *ctx, grn_obj *db)
 {
@@ -412,18 +446,7 @@ grn_table_reindex(grn_ctx *ctx, grn_obj *table)
   }
 
   if (grn_table_columns(ctx, table, "", 0, (grn_obj *)columns) > 0) {
-    grn_bool have_data_column = GRN_FALSE;
     grn_id *key;
-    GRN_HASH_EACH(ctx, columns, id, &key, NULL, NULL, {
-      grn_obj *column = grn_ctx_at(ctx, *key);
-      if (column && column->header.type != GRN_COLUMN_INDEX) {
-        have_data_column = GRN_TRUE;
-        break;
-      }
-    });
-    if (!have_data_column) {
-      grn_table_truncate(ctx, table);
-    }
     GRN_HASH_EACH(ctx, columns, id, &key, NULL, NULL, {
       grn_obj *column = grn_ctx_at(ctx, *key);
       if (column && column->header.type == GRN_COLUMN_INDEX) {
@@ -580,4 +603,87 @@ grn_obj_name_is_column(grn_ctx *ctx, const char *name, int name_len)
   }
 
   return memchr(name, GRN_DB_DELIMITER, name_len) != NULL;
+}
+
+grn_io *
+grn_obj_get_io(grn_ctx *ctx, grn_obj *obj)
+{
+  grn_io *io = NULL;
+
+  if (!obj) {
+    return NULL;
+  }
+
+  if (obj->header.type == GRN_DB) {
+    obj = ((grn_db *)obj)->keys;
+  }
+
+  switch (obj->header.type) {
+  case GRN_TABLE_PAT_KEY :
+    io = ((grn_pat *)obj)->io;
+    break;
+  case GRN_TABLE_DAT_KEY :
+    io = ((grn_dat *)obj)->io;
+    break;
+  case GRN_TABLE_HASH_KEY :
+    io = ((grn_hash *)obj)->io;
+    break;
+  case GRN_TABLE_NO_KEY :
+    io = ((grn_array *)obj)->io;
+    break;
+  case GRN_COLUMN_VAR_SIZE :
+    io = ((grn_ja *)obj)->io;
+    break;
+  case GRN_COLUMN_FIX_SIZE :
+    io = ((grn_ra *)obj)->io;
+    break;
+  case GRN_COLUMN_INDEX :
+    io = ((grn_ii *)obj)->seg;
+    break;
+  }
+
+  return io;
+}
+
+size_t
+grn_obj_get_disk_usage(grn_ctx *ctx, grn_obj *obj)
+{
+  size_t usage = 0;
+
+  GRN_API_ENTER;
+
+  if (!obj) {
+    ERR(GRN_INVALID_ARGUMENT, "[object][disk-usage] object must not be NULL");
+    GRN_API_RETURN(0);
+  }
+
+  switch (obj->header.type) {
+  case GRN_DB :
+    {
+      grn_db *db = (grn_db *)obj;
+      usage = grn_obj_get_disk_usage(ctx, db->keys);
+      if (db->specs) {
+        usage += grn_obj_get_disk_usage(ctx, (grn_obj *)(db->specs));
+      }
+      usage += grn_obj_get_disk_usage(ctx, (grn_obj *)(db->config));
+    }
+    break;
+  case GRN_TABLE_DAT_KEY :
+    usage = grn_dat_get_disk_usage(ctx, (grn_dat *)obj);
+    break;
+  case GRN_COLUMN_INDEX :
+    usage = grn_ii_get_disk_usage(ctx, (grn_ii *)obj);
+    break;
+  default :
+    {
+      grn_io *io;
+      io = grn_obj_get_io(ctx, obj);
+      if (io) {
+        usage = grn_io_get_disk_usage(ctx, io);
+      }
+    }
+    break;
+  }
+
+  GRN_API_RETURN(usage);
 }

@@ -240,7 +240,7 @@ set_weight_vector(grn_ctx *ctx, grn_obj *column, grn_id id, grn_obj *value)
   }
 }
 
-static inline int
+static grn_inline int
 name_equal(const char *p, unsigned int size, const char *name)
 {
   if (strlen(name) != size) { return 0; }
@@ -489,6 +489,7 @@ bracket_close(grn_ctx *ctx, grn_loader *loader)
       report_set_column_value_failure(ctx, key_value,
                                       column_name, column_name_size,
                                       value);
+      loader->n_column_errors++;
       ERRCLR(ctx);
     }
     cols++;
@@ -501,6 +502,9 @@ bracket_close(grn_ctx *ctx, grn_loader *loader)
   loader->nrecords++;
 exit:
   if (is_record_load) {
+    if (ctx->rc != GRN_SUCCESS) {
+      loader->n_record_errors++;
+    }
     if (loader->output_ids) {
       GRN_UINT32_PUT(ctx, &(loader->ids), id);
     }
@@ -656,6 +660,7 @@ brace_close(grn_ctx *ctx, grn_loader *loader)
         grn_loader_save_error(ctx, loader);
         report_set_column_value_failure(ctx, key_value,
                                         name, name_size, value);
+        loader->n_column_errors++;
         ERRCLR(ctx);
       }
       grn_obj_unlink(ctx, col);
@@ -668,6 +673,9 @@ brace_close(grn_ctx *ctx, grn_loader *loader)
   }
   loader->nrecords++;
 exit:
+  if (ctx->rc != GRN_SUCCESS) {
+    loader->n_record_errors++;
+  }
   if (loader->output_ids) {
     GRN_UINT32_PUT(ctx, &(loader->ids), id);
   }
@@ -841,19 +849,25 @@ json_read(grn_ctx *ctx, grn_loader *loader, const char *str, unsigned int str_le
             loader->last->header.domain = GRN_DB_INT64;
             GRN_INT64_SET(ctx, loader->last, i);
           } else if (cur != str) {
-            double d;
-            char *end;
-            grn_obj buf;
-            GRN_TEXT_INIT(&buf, 0);
-            GRN_TEXT_PUT(ctx, &buf, str, GRN_BULK_VSIZE(loader->last));
-            GRN_TEXT_PUTC(ctx, &buf, '\0');
-            errno = 0;
-            d = strtod(GRN_TEXT_VALUE(&buf), &end);
-            if (!errno && end + 1 == GRN_BULK_CURR(&buf)) {
-              loader->last->header.domain = GRN_DB_FLOAT;
-              GRN_FLOAT_SET(ctx, loader->last, d);
+            uint64_t i = grn_atoull(str, str_end, &cur);
+            if (cur == str_end) {
+              loader->last->header.domain = GRN_DB_UINT64;
+              GRN_UINT64_SET(ctx, loader->last, i);
+            } else if (cur != str) {
+              double d;
+              char *end;
+              grn_obj buf;
+              GRN_TEXT_INIT(&buf, 0);
+              GRN_TEXT_PUT(ctx, &buf, str, GRN_BULK_VSIZE(loader->last));
+              GRN_TEXT_PUTC(ctx, &buf, '\0');
+              errno = 0;
+              d = strtod(GRN_TEXT_VALUE(&buf), &end);
+              if (!errno && end + 1 == GRN_BULK_CURR(&buf)) {
+                loader->last->header.domain = GRN_DB_FLOAT;
+                GRN_FLOAT_SET(ctx, loader->last, d);
+              }
+              GRN_OBJ_FIN(ctx, &buf);
             }
-            GRN_OBJ_FIN(ctx, &buf);
           }
         }
         loader->stat = GRN_BULK_VSIZE(&loader->level) ? GRN_LOADER_TOKEN : GRN_LOADER_END;
@@ -989,13 +1003,27 @@ json_read(grn_ctx *ctx, grn_loader *loader, const char *str, unsigned int str_le
       }
       {
         uint32_t u = loader->unichar;
+        if (u >= 0xd800 && u <= 0xdbff) { /* High-surrogate code points */
+          loader->unichar_hi = u;
+          loader->stat = GRN_LOADER_STRING;
+          str++;
+          break;
+        }
+        if (u >= 0xdc00 && u <= 0xdfff) { /* Low-surrogate code points */
+          u = 0x10000 + (loader->unichar_hi - 0xd800) * 0x400 + u - 0xdc00;
+        }
         if (u < 0x80) {
           GRN_TEXT_PUTC(ctx, loader->last, u);
         } else {
           if (u < 0x800) {
-            GRN_TEXT_PUTC(ctx, loader->last, ((u >> 6) & 0x1f) | 0xc0);
+            GRN_TEXT_PUTC(ctx, loader->last, (u >> 6) | 0xc0);
           } else {
-            GRN_TEXT_PUTC(ctx, loader->last, (u >> 12) | 0xe0);
+            if (u < 0x10000) {
+              GRN_TEXT_PUTC(ctx, loader->last, (u >> 12) | 0xe0);
+            } else {
+              GRN_TEXT_PUTC(ctx, loader->last, (u >> 18) | 0xf0);
+              GRN_TEXT_PUTC(ctx, loader->last, ((u >> 12) & 0x3f) | 0x80);
+            }
             GRN_TEXT_PUTC(ctx, loader->last, ((u >> 6) & 0x3f) | 0x80);
           }
           GRN_TEXT_PUTC(ctx, loader->last, (u & 0x3f) | 0x80);

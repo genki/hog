@@ -28,10 +28,6 @@
 # include <share.h>
 #endif /* WIN32 */
 
-#ifdef WIN32
-# define fileno(file) _fileno(file)
-#endif
-
 static const char *log_level_names[] = {
   "none",
   "emergency",
@@ -127,6 +123,7 @@ rotate_log_file(grn_ctx *ctx, const char *current_path)
   rename(current_path, rotated_path);
 }
 
+static grn_bool logger_inited = GRN_FALSE;
 static char *default_logger_path = NULL;
 static FILE *default_logger_file = NULL;
 static grn_critical_section default_logger_lock;
@@ -149,7 +146,7 @@ default_logger_log(grn_ctx *ctx, grn_log_level level,
       default_logger_size = 0;
       if (default_logger_file) {
         struct stat stat;
-        if (fstat(fileno(default_logger_file), &stat) != -1) {
+        if (fstat(grn_fileno(default_logger_file), &stat) != -1) {
           default_logger_size = stat.st_size;
         }
       }
@@ -262,6 +259,10 @@ grn_default_logger_get_flags(void)
 void
 grn_default_logger_set_path(const char *path)
 {
+  if (logger_inited) {
+    CRITICAL_SECTION_ENTER(default_logger_lock);
+  }
+
   if (default_logger_path) {
     free(default_logger_path);
   }
@@ -270,6 +271,10 @@ grn_default_logger_set_path(const char *path)
     default_logger_path = grn_strdup_raw(path);
   } else {
     default_logger_path = NULL;
+  }
+
+  if (logger_inited) {
+    CRITICAL_SECTION_LEAVE(default_logger_lock);
   }
 }
 
@@ -420,10 +425,10 @@ grn_logger_putv(grn_ctx *ctx,
     }
     if (current_logger.flags & GRN_LOG_LOCATION) {
       grn_snprintf(lbuf, LBUFSIZE, LBUFSIZE,
-                   "%d %s:%d %s()", getpid(), file, line, func);
+                   "%d %s:%d %s()", grn_getpid(), file, line, func);
     } else if (current_logger.flags & GRN_LOG_PID) {
       grn_snprintf(lbuf, LBUFSIZE, LBUFSIZE,
-                   "%d", getpid());
+                   "%d", grn_getpid());
     } else {
       lbuf[0] = '\0';
     }
@@ -439,6 +444,8 @@ grn_logger_init(void)
   if (!current_logger.log) {
     current_logger = default_logger;
   }
+
+  logger_inited = GRN_TRUE;
 }
 
 void
@@ -450,14 +457,71 @@ grn_logger_fin(grn_ctx *ctx)
     default_logger_path = NULL;
   }
   CRITICAL_SECTION_FIN(default_logger_lock);
+
+  logger_inited = GRN_FALSE;
 }
 
 
+static grn_bool query_logger_inited = GRN_FALSE;
 static char *default_query_logger_path = NULL;
 static FILE *default_query_logger_file = NULL;
 static grn_critical_section default_query_logger_lock;
 static off_t default_query_logger_size = 0;
 static off_t default_query_logger_rotate_threshold_size = 0;
+
+grn_bool
+grn_query_log_flags_parse(const char *string,
+                          int string_size,
+                          unsigned int *flags)
+{
+  const char *string_end;
+
+  *flags = GRN_QUERY_LOG_NONE;
+
+  if (!string) {
+    return GRN_TRUE;
+  }
+
+  if (string_size < 0) {
+    string_size = strlen(string);
+  }
+
+  string_end = string + string_size;
+
+  while (string < string_end) {
+    if (*string == '|' || *string == ' ') {
+      string += 1;
+      continue;
+    }
+
+#define CHECK_FLAG(name)                                        \
+    if (((string_end - string) >= (sizeof(#name) - 1)) &&       \
+        (memcmp(string, #name, sizeof(#name) - 1) == 0) &&      \
+        (((string_end - string) == (sizeof(#name) - 1)) ||      \
+         (string[sizeof(#name) - 1] == '|') ||                  \
+         (string[sizeof(#name) - 1] == ' '))) {                 \
+      *flags |= GRN_QUERY_LOG_ ## name;                         \
+      string += sizeof(#name) - 1;                              \
+      continue;                                                 \
+    }
+
+    CHECK_FLAG(NONE);
+    CHECK_FLAG(COMMAND);
+    CHECK_FLAG(RESULT_CODE);
+    CHECK_FLAG(DESTINATION);
+    CHECK_FLAG(CACHE);
+    CHECK_FLAG(SIZE);
+    CHECK_FLAG(SCORE);
+    CHECK_FLAG(ALL);
+    CHECK_FLAG(DEFAULT);
+
+#undef CHECK_FLAG
+
+    return GRN_FALSE;
+  }
+
+  return GRN_TRUE;
+}
 
 static void
 default_query_logger_log(grn_ctx *ctx, unsigned int flag,
@@ -471,7 +535,7 @@ default_query_logger_log(grn_ctx *ctx, unsigned int flag,
       default_query_logger_size = 0;
       if (default_query_logger_file) {
         struct stat stat;
-        if (fstat(fileno(default_query_logger_file), &stat) != -1) {
+        if (fstat(grn_fileno(default_query_logger_file), &stat) != -1) {
           default_query_logger_size = stat.st_size;
         }
       }
@@ -563,6 +627,10 @@ grn_default_query_logger_get_flags(void)
 void
 grn_default_query_logger_set_path(const char *path)
 {
+  if (query_logger_inited) {
+    CRITICAL_SECTION_ENTER(default_query_logger_lock);
+  }
+
   if (default_query_logger_path) {
     free(default_query_logger_path);
   }
@@ -571,6 +639,10 @@ grn_default_query_logger_set_path(const char *path)
     default_query_logger_path = grn_strdup_raw(path);
   } else {
     default_query_logger_path = NULL;
+  }
+
+  if (query_logger_inited) {
+    CRITICAL_SECTION_LEAVE(default_query_logger_lock);
   }
 }
 
@@ -622,6 +694,30 @@ grn_query_logger_set(grn_ctx *ctx, const grn_query_logger *logger)
     current_query_logger = default_query_logger;
   }
   return GRN_SUCCESS;
+}
+
+void
+grn_query_logger_set_flags(grn_ctx *ctx, unsigned int flags)
+{
+  current_query_logger.flags = flags;
+}
+
+void
+grn_query_logger_add_flags(grn_ctx *ctx, unsigned int flags)
+{
+  current_query_logger.flags |= flags;
+}
+
+void
+grn_query_logger_remove_flags(grn_ctx *ctx, unsigned int flags)
+{
+  current_query_logger.flags &= ~flags;
+}
+
+unsigned int
+grn_query_logger_get_flags(grn_ctx *ctx)
+{
+  return current_query_logger.flags;
 }
 
 grn_bool
@@ -689,6 +785,8 @@ grn_query_logger_init(void)
 {
   current_query_logger = default_query_logger;
   CRITICAL_SECTION_INIT(default_query_logger_lock);
+
+  query_logger_inited = GRN_TRUE;
 }
 
 void
@@ -700,6 +798,8 @@ grn_query_logger_fin(grn_ctx *ctx)
     default_query_logger_path = NULL;
   }
   CRITICAL_SECTION_FIN(default_query_logger_lock);
+
+  query_logger_inited = GRN_FALSE;
 }
 
 void

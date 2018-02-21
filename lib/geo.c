@@ -1,5 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
-/* Copyright(C) 2009-2013 Brazil
+/*
+  Copyright(C) 2009-2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -583,7 +584,7 @@ grn_geo_table_sort_collect_points(grn_ctx *ctx, grn_obj *table, grn_obj *index,
   return n_entries;
 }
 
-static inline grn_obj *
+static grn_inline grn_obj *
 find_geo_sort_index(grn_ctx *ctx, grn_obj *key)
 {
   grn_obj *index = NULL;
@@ -610,7 +611,7 @@ find_geo_sort_index(grn_ctx *ctx, grn_obj *key)
   return index;
 }
 
-static inline int
+static grn_inline int
 grn_geo_table_sort_by_distance(grn_ctx *ctx,
                                grn_obj *table,
                                grn_obj *index,
@@ -710,6 +711,27 @@ grn_geo_table_sort(grn_ctx *ctx, grn_obj *table, int offset, int limit,
   if ((index = find_geo_sort_index(ctx, column))) {
     grn_id tid;
     grn_pat *pat = (grn_pat *)grn_ctx_at(ctx, index->header.domain);
+    if (!pat) {
+      char index_name[GRN_TABLE_MAX_KEY_SIZE];
+      int index_name_size;
+      char lexicon_name[GRN_TABLE_MAX_KEY_SIZE];
+      int lexicon_name_size;
+      index_name_size = grn_obj_name(ctx,
+                                     index,
+                                     index_name,
+                                     GRN_TABLE_MAX_KEY_SIZE);
+      lexicon_name_size = grn_table_get_key(ctx,
+                                            grn_ctx_db(ctx),
+                                            index->header.domain,
+                                            lexicon_name,
+                                            GRN_TABLE_MAX_KEY_SIZE);
+      ERR(GRN_OBJECT_CORRUPT,
+          "[sort][geo] lexicon is broken: <%.*s>: <%.*s>(%d)",
+          index_name_size, index_name,
+          lexicon_name_size, lexicon_name,
+          index->header.domain);
+      GRN_API_RETURN(i);
+    }
     grn_id domain = pat->obj.header.domain;
     grn_pat_cursor *pc = grn_pat_cursor_open(ctx, pat, NULL, 0,
                                              GRN_BULK_HEAD(geo_point),
@@ -871,6 +893,27 @@ grn_geo_select_in_circle(grn_ctx *ctx, grn_obj *index,
   grn_geo_point *center, on_circle;
   grn_geo_distance_raw_func distance_raw_func;
   pat = grn_ctx_at(ctx, index->header.domain);
+  if (!pat) {
+    char index_name[GRN_TABLE_MAX_KEY_SIZE];
+    int index_name_size;
+    char lexicon_name[GRN_TABLE_MAX_KEY_SIZE];
+    int lexicon_name_size;
+    index_name_size = grn_obj_name(ctx,
+                                   index,
+                                   index_name,
+                                   GRN_TABLE_MAX_KEY_SIZE);
+    lexicon_name_size = grn_table_get_key(ctx,
+                                          grn_ctx_db(ctx),
+                                          index->header.domain,
+                                          lexicon_name,
+                                          GRN_TABLE_MAX_KEY_SIZE);
+    ERR(GRN_OBJECT_CORRUPT,
+        "geo_in_circle(): lexicon is broken: <%.*s>: <%.*s>(%d)",
+        index_name_size, index_name,
+        lexicon_name_size, lexicon_name,
+        index->header.domain);
+    goto exit;
+  }
   domain = pat->header.domain;
   if (domain != GRN_DB_TOKYO_GEO_POINT && domain != GRN_DB_WGS84_GEO_POINT) {
     char name[GRN_TABLE_MAX_KEY_SIZE];
@@ -1043,6 +1086,29 @@ in_rectangle_data_fill(grn_ctx *ctx, grn_obj *index,
   const char *domain_name;
 
   data->pat = grn_ctx_at(ctx, index->header.domain);
+  if (!data->pat) {
+    char index_name[GRN_TABLE_MAX_KEY_SIZE];
+    int index_name_size;
+    char lexicon_name[GRN_TABLE_MAX_KEY_SIZE];
+    int lexicon_name_size;
+    index_name_size = grn_obj_name(ctx,
+                                   index,
+                                   index_name,
+                                   GRN_TABLE_MAX_KEY_SIZE);
+    lexicon_name_size = grn_table_get_key(ctx,
+                                          grn_ctx_db(ctx),
+                                          index->header.domain,
+                                          lexicon_name,
+                                          GRN_TABLE_MAX_KEY_SIZE);
+    ERR(GRN_OBJECT_CORRUPT,
+        "%s: lexicon lexicon is broken: <%.*s>: <%.*s>(%d)",
+        process_name,
+        index_name_size, index_name,
+        lexicon_name_size, lexicon_name,
+        index->header.domain);
+    return;
+  }
+
   domain = data->pat->header.domain;
   if (domain != GRN_DB_TOKYO_GEO_POINT && domain != GRN_DB_WGS84_GEO_POINT) {
     char name[GRN_TABLE_MAX_KEY_SIZE];
@@ -1543,7 +1609,7 @@ exit :
   GRN_API_RETURN((grn_obj *)cursor);
 }
 
-static inline grn_bool
+static grn_inline grn_bool
 grn_geo_cursor_entry_next_push(grn_ctx *ctx,
                                grn_geo_cursor_in_rectangle *cursor,
                                grn_geo_cursor_entry *entry)
@@ -1575,7 +1641,7 @@ grn_geo_cursor_entry_next_push(grn_ctx *ctx,
   return pushed;
 }
 
-static inline grn_bool
+static grn_inline grn_bool
 grn_geo_cursor_entry_next(grn_ctx *ctx,
                           grn_geo_cursor_in_rectangle *cursor,
                           grn_geo_cursor_entry *entry)
@@ -2272,7 +2338,7 @@ geo_longitude_distance_type(int start_longitude, int end_longitude)
   }
 }
 
-static inline quadrant_type
+static grn_inline quadrant_type
 geo_quadrant_type(grn_geo_point *point1, grn_geo_point *point2)
 {
 #define QUADRANT_1ST_WITH_AXIS(point) \
@@ -2340,7 +2406,7 @@ geo_quadrant_type(grn_geo_point *point1, grn_geo_point *point2)
 #undef QUADRANT_4TH_WITH_AXIS
 }
 
-static inline double
+static grn_inline double
 geo_distance_rectangle_square_root(double start_longitude, double start_latitude,
                                    double end_longitude, double end_latitude)
 {
@@ -2353,7 +2419,7 @@ geo_distance_rectangle_square_root(double start_longitude, double start_latitude
   return sqrt((x * x) + (y * y));
 }
 
-static inline double
+static grn_inline double
 geo_distance_rectangle_short_dist_type(quadrant_type quad_type,
                                        double lng1, double lat1,
                                        double lng2, double lat2)
@@ -2422,7 +2488,7 @@ geo_distance_rectangle_short_dist_type(quadrant_type quad_type,
   return distance;
 }
 
-static inline double
+static grn_inline double
 geo_distance_rectangle_long_dist_type(quadrant_type quad_type,
                                       double lng1, double lat1,
                                       double lng2, double lat2)

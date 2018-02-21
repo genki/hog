@@ -150,14 +150,14 @@ grn_window_set_direction(grn_ctx *ctx,
   GRN_API_RETURN(GRN_SUCCESS);
 }
 
-static inline void
+static grn_inline void
 grn_window_reset(grn_ctx *ctx,
                  grn_window *window)
 {
   GRN_BULK_REWIND(&(window->ids));
 }
 
-static inline void
+static grn_inline void
 grn_window_add_record(grn_ctx *ctx,
                       grn_window *window,
                       grn_id record_id)
@@ -165,7 +165,7 @@ grn_window_add_record(grn_ctx *ctx,
   GRN_RECORD_PUT(ctx, &(window->ids), record_id);
 }
 
-static inline grn_bool
+static grn_inline grn_bool
 grn_window_is_empty(grn_ctx *ctx,
                     grn_window *window)
 {
@@ -183,6 +183,15 @@ grn_window_is_sorted(grn_ctx *ctx, grn_window *window)
   }
 
   GRN_API_RETURN(window->is_sorted);
+}
+
+size_t
+grn_window_get_size(grn_ctx *ctx,
+                    grn_window *window)
+{
+  GRN_API_ENTER;
+
+  GRN_API_RETURN(window->n_ids);
 }
 
 grn_obj *
@@ -241,7 +250,7 @@ grn_expr_is_window_function_call(grn_ctx *ctx,
   if (call->op != GRN_OP_CALL) {
     return GRN_FALSE;
   }
-  if (call->nargs != (expr->codes_curr - 2)) {
+  if (call->nargs != (expr->codes_curr - 1)) {
     return GRN_FALSE;
   }
 

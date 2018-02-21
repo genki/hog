@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2009-2016 Brazil
+  Copyright(C) 2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,25 +24,24 @@
 extern "C" {
 #endif
 
-#define GRN_CACHE_MAX_KEY_SIZE GRN_HASH_MAX_KEY_SIZE_LARGE
-
 typedef struct {
-  uint32_t nentries;
-  uint32_t max_nentries;
-  uint32_t nfetches;
-  uint32_t nhits;
-} grn_cache_statistics;
+  const char *path;
+#ifdef WIN32
+  HANDLE handle;
+#else /* WIN32 */
+  int fd;
+#endif /* WIN32 */
+} grn_file_lock;
 
-void grn_cache_init(void);
-grn_rc grn_cache_fetch(grn_ctx *ctx, grn_cache *cache,
-                       const char *str, uint32_t str_size,
-                       grn_obj *output);
-void grn_cache_update(grn_ctx *ctx, grn_cache *cache,
-                      const char *str, uint32_t str_size, grn_obj *value);
-void grn_cache_expire(grn_cache *cache, int32_t size);
-void grn_cache_fin(void);
-void grn_cache_get_statistics(grn_ctx *ctx, grn_cache *cache,
-                              grn_cache_statistics *statistics);
+void grn_file_lock_init(grn_ctx *ctx,
+                        grn_file_lock *file_lock,
+                        const char *path);
+grn_bool grn_file_lock_acquire(grn_ctx *ctx,
+                               grn_file_lock *file_lock,
+                               int timeout,
+                               const char *error_message_tag);
+void grn_file_lock_release(grn_ctx *ctx, grn_file_lock *file_lock);
+void grn_file_lock_fin(grn_ctx *ctx, grn_file_lock *file_lock);
 
 #ifdef __cplusplus
 }

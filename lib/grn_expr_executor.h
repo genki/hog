@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2009-2016 Brazil
+  Copyright(C) 2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -18,31 +18,21 @@
 
 #pragma once
 
-#include "grn.h"
+#include "grn_db.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define GRN_CACHE_MAX_KEY_SIZE GRN_HASH_MAX_KEY_SIZE_LARGE
+typedef struct _grn_expr_executor grn_expr_executor;
 
-typedef struct {
-  uint32_t nentries;
-  uint32_t max_nentries;
-  uint32_t nfetches;
-  uint32_t nhits;
-} grn_cache_statistics;
-
-void grn_cache_init(void);
-grn_rc grn_cache_fetch(grn_ctx *ctx, grn_cache *cache,
-                       const char *str, uint32_t str_size,
-                       grn_obj *output);
-void grn_cache_update(grn_ctx *ctx, grn_cache *cache,
-                      const char *str, uint32_t str_size, grn_obj *value);
-void grn_cache_expire(grn_cache *cache, int32_t size);
-void grn_cache_fin(void);
-void grn_cache_get_statistics(grn_ctx *ctx, grn_cache *cache,
-                              grn_cache_statistics *statistics);
+grn_expr_executor *grn_expr_executor_open(grn_ctx *ctx,
+                                          grn_obj *expr);
+grn_obj *grn_expr_executor_exec(grn_ctx *ctx,
+                                grn_expr_executor *executor,
+                                grn_id id);
+grn_rc grn_expr_executor_close(grn_ctx *ctx,
+                               grn_expr_executor *executor);
 
 #ifdef __cplusplus
 }

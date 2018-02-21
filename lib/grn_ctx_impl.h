@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2009-2016 Brazil
+  Copyright(C) 2009-2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -85,8 +85,11 @@ typedef struct {
   grn_obj *ifexists;
   grn_obj *each;
   uint32_t unichar;
+  uint32_t unichar_hi;
   uint32_t values_size;
   uint32_t nrecords;
+  uint32_t n_record_errors;
+  uint32_t n_column_errors;
   grn_loader_stat stat;
   grn_content_type input_type;
   grn_loader_columns_status columns_status;
@@ -161,8 +164,9 @@ struct _grn_ctx_impl {
 #endif
 
   /* expression portion */
-  grn_obj *stack[GRN_STACK_SIZE];
+  grn_obj **stack;
   uint32_t stack_curr;
+  uint32_t stack_size;
   grn_hash *expr_vars;
   grn_obj *curr_expr;
   grn_obj current_request_id;

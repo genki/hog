@@ -17,6 +17,7 @@
 */
 
 #include "grn_error.h"
+//#include "grn_windows.h"
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
@@ -112,6 +113,9 @@ grn_windows_error_code_to_rc(int error_code)
     break;
   case ERROR_BAD_EXE_FORMAT :
     rc = GRN_EXEC_FORMAT_ERROR;
+    break;
+  case ERROR_NO_SYSTEM_RESOURCES :
+    rc = GRN_RESOURCE_TEMPORARILY_UNAVAILABLE;
     break;
   default:
     rc = GRN_UNKNOWN_ERROR;

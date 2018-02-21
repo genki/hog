@@ -1,5 +1,6 @@
+/* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2009-2017 Brazil
+  Copyright(C) 2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -18,20 +19,16 @@
 
 #pragma once
 
+#include "grn_store.h"
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-typedef struct _grn_column_cache grn_column_cache;
-
-GRN_API grn_column_flags grn_column_get_flags(grn_ctx *ctx, grn_obj *column);
-
-GRN_API grn_column_cache *grn_column_cache_open(grn_ctx *ctx, grn_obj *column);
-GRN_API void grn_column_cache_close(grn_ctx *ctx, grn_column_cache *cache);
-GRN_API void *grn_column_cache_ref(grn_ctx *ctx,
-                                   grn_column_cache *cache,
-                                   grn_id id,
-                                   size_t *value_size);
+struct _grn_column_cache {
+  grn_ra *ra;
+  grn_ra_cache ra_cache;
+};
 
 #ifdef __cplusplus
 }

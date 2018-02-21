@@ -42,19 +42,6 @@ grn_normalize_offset_and_limit(grn_ctx *ctx, int size, int *p_offset, int *p_lim
   int offset = *p_offset;
   int limit = *p_limit;
 
-  if (offset < 0) {
-    offset += size;
-    if (offset < 0) {
-      *p_offset = 0;
-      *p_limit = 0;
-      return GRN_TOO_SMALL_OFFSET;
-    }
-  } else if (offset != 0 && offset >= size) {
-    *p_offset = 0;
-    *p_limit = 0;
-    return GRN_TOO_LARGE_OFFSET;
-  }
-
   if (limit < 0) {
     limit += size + 1;
     if (limit < 0) {
@@ -64,6 +51,24 @@ grn_normalize_offset_and_limit(grn_ctx *ctx, int size, int *p_offset, int *p_lim
     }
   } else if (limit > size) {
     limit = size;
+  }
+
+  if (offset < 0) {
+    offset += size;
+    if (offset < 0) {
+      if (limit + offset >= 0) {
+        limit += offset;
+        offset = 0;
+      } else {
+        *p_offset = 0;
+        *p_limit = 0;
+        return GRN_TOO_SMALL_OFFSET;
+      }
+    }
+  } else if (offset != 0 && offset >= size) {
+    *p_offset = 0;
+    *p_limit = 0;
+    return GRN_TOO_LARGE_OFFSET;
   }
 
   /* At this point, offset and limit must be zero or positive. */
@@ -246,6 +251,39 @@ grn_inspect_type(grn_ctx *ctx, grn_obj *buf, unsigned char type)
   }
 
   return buf;
+}
+
+
+grn_obj *
+grn_inspect_query_log_flags(grn_ctx *ctx, grn_obj *buffer, unsigned int flags)
+{
+  grn_bool have_content = GRN_FALSE;
+
+  if (flags == GRN_QUERY_LOG_NONE) {
+    GRN_TEXT_PUTS(ctx, buffer, "NONE");
+    return buffer;
+  }
+
+#define CHECK_FLAG(NAME) do {                   \
+    if (flags & GRN_QUERY_LOG_ ## NAME) {       \
+      if (have_content) {                       \
+        GRN_TEXT_PUTS(ctx, buffer, "|");        \
+      }                                         \
+      GRN_TEXT_PUTS(ctx, buffer, #NAME);        \
+      have_content = GRN_TRUE;                  \
+    }                                           \
+  } while (GRN_FALSE)
+
+  CHECK_FLAG(COMMAND);
+  CHECK_FLAG(RESULT_CODE);
+  CHECK_FLAG(DESTINATION);
+  CHECK_FLAG(CACHE);
+  CHECK_FLAG(SIZE);
+  CHECK_FLAG(SCORE);
+
+#undef CHECK_FALG
+
+  return buffer;
 }
 
 static grn_rc

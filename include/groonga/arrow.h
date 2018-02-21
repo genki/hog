@@ -1,5 +1,5 @@
 /*
-  Copyright(C) 2009-2017 Brazil
+  Copyright(C) 2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,16 +22,16 @@
 extern "C" {
 #endif
 
-typedef struct _grn_column_cache grn_column_cache;
-
-GRN_API grn_column_flags grn_column_get_flags(grn_ctx *ctx, grn_obj *column);
-
-GRN_API grn_column_cache *grn_column_cache_open(grn_ctx *ctx, grn_obj *column);
-GRN_API void grn_column_cache_close(grn_ctx *ctx, grn_column_cache *cache);
-GRN_API void *grn_column_cache_ref(grn_ctx *ctx,
-                                   grn_column_cache *cache,
-                                   grn_id id,
-                                   size_t *value_size);
+GRN_API grn_rc grn_arrow_load(grn_ctx *ctx,
+                              grn_obj *table,
+                              const char *path);
+GRN_API grn_rc grn_arrow_dump(grn_ctx *ctx,
+                              grn_obj *table,
+                              const char *path);
+GRN_API grn_rc grn_arrow_dump_columns(grn_ctx *ctx,
+                                      grn_obj *table,
+                                      grn_obj *columns,
+                                      const char *path);
 
 #ifdef __cplusplus
 }

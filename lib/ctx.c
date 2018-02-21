@@ -49,6 +49,7 @@
 
 #ifdef WIN32
 # include <share.h>
+# include <dbghelp.h>
 #else /* WIN32 */
 # include <netinet/in.h>
 #endif /* WIN32 */
@@ -158,6 +159,8 @@ grn_loader_init(grn_loader *loader)
   loader->each = NULL;
   loader->values_size = 0;
   loader->nrecords = 0;
+  loader->n_record_errors = 0;
+  loader->n_column_errors = 0;
   loader->stat = GRN_LOADER_BEGIN;
   loader->columns_status = GRN_LOADER_COLUMNS_UNSET;
   loader->rc = GRN_SUCCESS;
@@ -239,8 +242,28 @@ grn_ctx_impl_init(grn_ctx *ctx)
   }
   ctx->impl->db = NULL;
 
-  ctx->impl->expr_vars = grn_hash_create(ctx, NULL, sizeof(grn_id), sizeof(grn_obj *), 0);
+  if (!(ctx->impl->expr_vars = grn_hash_create(ctx, NULL, sizeof(grn_id),
+                                               sizeof(grn_obj *), 0))) {
+    grn_array_close(ctx, ctx->impl->values);
+    grn_pat_close(ctx, ctx->impl->temporary_columns);
+    CRITICAL_SECTION_FIN(ctx->impl->lock);
+    grn_io_anon_unmap(ctx, &mi, IMPL_SIZE);
+    grn_hash_close(ctx, ctx->impl->ios);
+    ctx->impl = NULL;
+    return ctx->rc;
+  }
+  if (!(ctx->impl->stack = GRN_MALLOCN(grn_obj *, GRN_STACK_SIZE))) {
+    grn_array_close(ctx, ctx->impl->values);
+    grn_pat_close(ctx, ctx->impl->temporary_columns);
+    CRITICAL_SECTION_FIN(ctx->impl->lock);
+    grn_io_anon_unmap(ctx, &mi, IMPL_SIZE);
+    grn_hash_close(ctx, ctx->impl->ios);
+    grn_hash_close(ctx, ctx->impl->expr_vars);
+    ctx->impl = NULL;
+    return ctx->rc;
+  }
   ctx->impl->stack_curr = 0;
+  ctx->impl->stack_size = GRN_STACK_SIZE;
   ctx->impl->curr_expr = NULL;
   GRN_TEXT_INIT(&ctx->impl->current_request_id, 0);
   ctx->impl->current_request_timer_id = NULL;
@@ -345,6 +368,7 @@ grn_ctx_init_internal(grn_ctx *ctx, int flags)
 {
   if (!ctx) { return GRN_INVALID_ARGUMENT; }
   // if (ctx->stat != GRN_CTX_FIN) { return GRN_INVALID_ARGUMENT; }
+  ctx->rc = GRN_SUCCESS;
   ERRCLR(ctx);
   ctx->flags = flags;
   if (grn_ctx_per_db) {
@@ -481,7 +505,7 @@ grn_ctx_fin(grn_ctx *ctx)
     GRN_OBJ_FIN(ctx, &ctx->impl->output.names);
     GRN_OBJ_FIN(ctx, &ctx->impl->output.levels);
     rc = grn_obj_close(ctx, ctx->impl->output.buf);
-    {
+    if (ctx->impl->expr_vars) {
       grn_hash **vp;
       grn_obj *value;
       GRN_HASH_EACH(ctx, ctx->impl->expr_vars, eid, NULL, NULL, &vp, {
@@ -492,8 +516,11 @@ grn_ctx_fin(grn_ctx *ctx)
         }
         grn_hash_close(ctx, *vp);
       });
+      grn_hash_close(ctx, ctx->impl->expr_vars);
     }
-    grn_hash_close(ctx, ctx->impl->expr_vars);
+    if (ctx->impl->stack) {
+      GRN_FREE(ctx->impl->stack);
+    }
     if (ctx->impl->db && ctx->flags & GRN_CTX_PER_DB) {
       grn_obj *db = ctx->impl->db;
       ctx->impl->db = NULL;
@@ -1039,7 +1066,7 @@ get_command_version(grn_ctx *ctx, const char *p, const char *pe)
 #define HTTP_QUERY_PAIR_DELIMITER   "="
 #define HTTP_QUERY_PAIRS_DELIMITERS "&;"
 
-static inline int
+static grn_inline int
 command_proc_p(grn_obj *expr)
 {
   return (expr->header.type == GRN_PROC &&
@@ -1569,7 +1596,153 @@ grn_get_package_label(void)
   return PACKAGE_LABEL;
 }
 
-#if defined(HAVE_SIGNAL_H) && !defined(WIN32)
+#ifdef WIN32
+static LONG WINAPI
+exception_filter(EXCEPTION_POINTERS *info)
+{
+  grn_ctx *ctx = &grn_gctx;
+  HANDLE process;
+  HANDLE thread;
+  CONTEXT *context;
+  STACKFRAME64 frame;
+  DWORD machine_type;
+  DWORD previous_address;
+
+  process = GetCurrentProcess();
+  thread = GetCurrentThread();
+  context = info->ContextRecord;
+
+  SymSetOptions(SYMOPT_ALLOW_ABSOLUTE_SYMBOLS |
+                SYMOPT_ALLOW_ZERO_ADDRESS |
+                SYMOPT_AUTO_PUBLICS |
+                SYMOPT_DEBUG |
+                SYMOPT_DEFERRED_LOADS |
+                SYMOPT_LOAD_LINES |
+                SYMOPT_NO_PROMPTS);
+  SymInitialize(process, NULL, TRUE);
+  {
+    char search_path[MAX_PATH * 2];
+    const char *base_dir;
+
+    if (SymGetSearchPath(process, search_path, sizeof(search_path))) {
+      grn_strcat(search_path, sizeof(search_path), ";");
+    } else {
+      search_path[0] = '\0';
+    }
+
+    base_dir = grn_windows_base_dir();
+    {
+      char *current, *end;
+      const char *pdb_dir = "\\lib\\pdb";
+      current = search_path + strlen(search_path);
+      end = current + sizeof(search_path) - 1;
+      for (; *base_dir && current < end; base_dir++, current++) {
+        if (*base_dir == '/') {
+          *current = '\\';
+        } else {
+          *current = *base_dir;
+        }
+      }
+      if (current == end) {
+        current--;
+      }
+      *current = '\0';
+      grn_strcat(search_path, sizeof(search_path), pdb_dir);
+    }
+
+    SymSetSearchPath(process, search_path);
+  }
+
+  memset(&frame, 0, sizeof(STACKFRAME64));
+  frame.AddrPC.Mode = AddrModeFlat;
+  frame.AddrReturn.Mode = AddrModeFlat;
+  frame.AddrFrame.Mode = AddrModeFlat;
+  frame.AddrStack.Mode = AddrModeFlat;
+  frame.AddrBStore.Mode = AddrModeFlat;
+# ifdef _M_IX86
+  machine_type = IMAGE_FILE_MACHINE_I386;
+  frame.AddrPC.Offset = context->Eip;
+  frame.AddrFrame.Offset = context->Ebp;
+  frame.AddrStack.Offset = context->Esp;
+# elif defined(_M_IA64) /* _M_IX86 */
+  machine_type = IMAGE_FILE_MACHINE_IA64;
+  frame.AddrPC.Offset = context->StIIP;
+  frame.AddrStack.Offset = context->IntSP; /* SP is IntSP? */
+  frame.AddrBStore.Offset = context->RsBSP;
+# elif defined(_M_AMD64) /* _M_IX86 */
+  machine_type = IMAGE_FILE_MACHINE_AMD64;
+  frame.AddrPC.Offset = context->Rip;
+  frame.AddrFrame.Offset = context->Rbp;
+  frame.AddrStack.Offset = context->Rsp;
+# else /* _M_IX86 */
+#  error "Intel x86, Intel Itanium and x64 are only supported architectures"
+# endif /* _M_IX86 */
+
+  previous_address = 0;
+  while (GRN_TRUE) {
+    DWORD address;
+    IMAGEHLP_MODULE64 module;
+    char *buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+    SYMBOL_INFO *symbol = (SYMBOL_INFO *)buffer;
+    DWORD line_displacement = 0;
+    IMAGEHLP_LINE64 line;
+    grn_bool have_module_name = GRN_FALSE;
+    grn_bool have_symbol_name = GRN_FALSE;
+    grn_bool have_location = GRN_FALSE;
+
+    if (!StackWalk64(machine_type,
+                     process,
+                     thread,
+                     &frame,
+                     context,
+                     NULL,
+                     NULL,
+                     NULL,
+                     NULL)) {
+      break;
+    }
+
+    address = frame.AddrPC.Offset;
+    if (previous_address != 0 && address == previous_address) {
+      break;
+    }
+
+    module.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
+    if (SymGetModuleInfo64(process, address, &module)) {
+      have_module_name = GRN_TRUE;
+    }
+
+    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+    symbol->MaxNameLen = MAX_SYM_NAME;
+    if (SymFromAddr(process, address, NULL, symbol)) {
+      have_symbol_name = GRN_TRUE;
+    }
+
+    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+    if (SymGetLineFromAddr64(process, address, &line_displacement, &line)) {
+      have_location = GRN_TRUE;
+    }
+
+    {
+      const char *unknown = "(unknown)";
+      GRN_LOG(ctx, GRN_LOG_CRIT,
+              "%s:%d:%d: %p: %.*s(): <%s>: <%s>",
+              (have_location ? line.FileName : unknown),
+              (have_location ? line.LineNumber : -1),
+              (have_location ? line_displacement : -1),
+              address,
+              (have_symbol_name ? symbol->NameLen : strlen(unknown)),
+              (have_symbol_name ? symbol->Name : unknown),
+              (have_module_name ? module.ModuleName : unknown),
+              (have_module_name ? module.ImageName : unknown));
+    }
+
+    previous_address = address;
+  }
+
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+#elif defined(HAVE_SIGNAL_H) /* WIN32 */
 static int segv_received = 0;
 static void
 segv_handler(int signal_number, siginfo_t *info, void *context)
@@ -1583,7 +1756,7 @@ segv_handler(int signal_number, siginfo_t *info, void *context)
   segv_received = 1;
 
   GRN_LOG(ctx, GRN_LOG_CRIT, "-- CRASHED!!! --");
-#ifdef HAVE_BACKTRACE
+# ifdef HAVE_BACKTRACE
 #  define N_TRACE_LEVEL 1024
   {
     static void *trace[N_TRACE_LEVEL];
@@ -1598,19 +1771,21 @@ segv_handler(int signal_number, siginfo_t *info, void *context)
       free(symbols);
     }
   }
-#else /* HAVE_BACKTRACE */
+# else /* HAVE_BACKTRACE */
   GRN_LOG(ctx, GRN_LOG_CRIT, "backtrace() isn't available.");
-#endif /* HAVE_BACKTRACE */
+# endif /* HAVE_BACKTRACE */
   GRN_LOG(ctx, GRN_LOG_CRIT, "----------------");
   abort();
 }
-#endif /* defined(HAVE_SIGNAL_H) && !defined(WIN32) */
+#endif /* WIN32 */
 
 grn_rc
 grn_set_segv_handler(void)
 {
   grn_rc rc = GRN_SUCCESS;
-#if defined(HAVE_SIGNAL_H) && !defined(WIN32)
+#ifdef WIN32
+  SetUnhandledExceptionFilter(exception_filter);
+#elif defined(HAVE_SIGNAL_H) /* WIN32 */
   grn_ctx *ctx = &grn_gctx;
   struct sigaction action;
 
@@ -1622,7 +1797,7 @@ grn_set_segv_handler(void)
     SERR("failed to set SIGSEGV action");
     rc = ctx->rc;
   };
-#endif
+#endif /* WIN32 */
   return rc;
 }
 

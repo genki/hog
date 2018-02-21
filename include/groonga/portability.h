@@ -1,5 +1,5 @@
 /*
-  Copyright(C) 2015-2016 Brazil
+  Copyright(C) 2015-2017 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -180,4 +180,22 @@
 # define grn_close(fd) _close((fd))
 #else /* WIN32 */
 # define grn_close(fd) close((fd))
+#endif /* WIN32 */
+
+#ifdef WIN32
+# define grn_fileno(stream) _fileno((stream))
+#else /* WIN32 */
+# define grn_fileno(stream) fileno((stream))
+#endif /* WIN32 */
+
+#ifdef WIN32
+# define grn_isatty(stream) _isatty((stream))
+#else /* WIN32 */
+# define grn_isatty(stream) isatty((stream))
+#endif /* WIN32 */
+
+#ifdef WIN32
+# define grn_getpid() _getpid()
+#else /* WIN32 */
+# define grn_getpid() getpid()
 #endif /* WIN32 */
