@@ -37,7 +37,7 @@
 #define GRN_STACK_SIZE 1024
 
 /* groonga version */
-#define GRN_VERSION "6.1.4-172-g459cb94"
+#define GRN_VERSION "8.0.0"
 
 /* Define to 1 if benchamrk is available */
 /* #undef GRN_WITH_BENCHMARK */

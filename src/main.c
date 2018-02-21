@@ -1,5 +1,4 @@
-#define PROJECT_VERSION "0.6.0"
-#define GROONGA_VERSION "8.0.0"
+#define HOG_VERSION "0.6.0"
 #include "hog.h"
 
 hog_t hog = {0};
@@ -44,6 +43,7 @@ int main(int argc, char *argv[])
     int port = 18618;
     int max_conn = 1024;
     int lock_clear = 0;
+    int lock_timeout = 10000; // in [ms]
     hog.verbose = 0;
 
     // opt parse
@@ -54,14 +54,15 @@ int main(int argc, char *argv[])
             case 'b': address = argv[++i]; break;
             case 'p': port = atoi(argv[++i]); break;
             case 'c': max_conn = atoi(argv[++i]); break;
+            case 't': lock_timeout = atoi(argv[++i]); break;
             case 'V': hog.verbose = 1; break;
             case 'u': lock_clear = 1; break;
             case 'l': log_path = argv[++i]; break;
             case 'L': log_level = argv[++i]; break;
             case 'v':
-              fprintf(stdout, "hog-%s with Groonga-%s\n",
-                  PROJECT_VERSION, GROONGA_VERSION);
-              exit(EXIT_SUCCESS);
+                fprintf(stdout, "hog-%s with Groonga-%s\n",
+                    HOG_VERSION, GRN_VERSION);
+                exit(EXIT_SUCCESS);
             default:
                 fprintf(stderr, "Unknown option -%s\n", &arg[1]);
                 exit(EXIT_FAILURE);
@@ -116,6 +117,7 @@ int main(int argc, char *argv[])
 
     // init groonga
     grn_init();
+    grn_set_lock_timeout(lock_timeout);
     atexit(cleanup);
     hog.ctx = hog_alloc(NULL, sizeof(grn_ctx));
     grn_rc rc = grn_ctx_init(hog.ctx, 0);
