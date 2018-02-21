@@ -18,7 +18,7 @@
 /* "specified match escalation threshold" */
 #define GRN_DEFAULT_MATCH_ESCALATION_THRESHOLD 0
 
-/* lock timeout in nanoseconds */
+/* lock timeout in msec */
 #define GRN_LOCK_TIMEOUT 900000
 
 /* lock wait time in nanosecond */

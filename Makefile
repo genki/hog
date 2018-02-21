@@ -35,13 +35,14 @@ image.ok: Dockerfile build/ok build/hog
 	docker build -t s21g/hog:longa .
 	touch image.ok
 
-push: image.ok
-	docker push s21g/hog:longa
-
-.PHONY: clean run
+.PHONY: clean run push tags
 
 run: build/ok
 	docker run -it --rm -p 18618:18618 -v $(CURDIR):/mnt \
 		--entrypoint build/hog hog-build -l /dev/stdout -L debug tmp/db/test
 clean:
 	rm -f $(OBJECTS) build/hog
+push: image.ok
+	docker push s21g/hog:longa
+tags:
+	ctags -R
