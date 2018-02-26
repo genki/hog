@@ -13,13 +13,13 @@
 #include <groonga.h>
 
 #define HOG_RECV(s, buf, len, fail) \
-    if(receive((s)->socket, (buf), (len)) != 0){ \
+    if(((s)->error = receive((s)->socket, (buf), (len))) != 0){ \
         fprintf(stderr, "Failed to recv %u bytes to %p (%s:%d)\n", \
                 (uint32_t)len, buf, __FILE__, __LINE__); \
         fail; \
     }
 #define HOG_SEND(s, buf, len, fail) \
-    if(submit((s)->socket, (buf), (len)) != 0){ \
+    if(((s)->error = submit((s)->socket, (buf), (len))) != 0){ \
         fprintf(stderr, "Failed to send %u bytes from %p (%s:%d)\n", \
                 (uint32_t)len, buf, __FILE__, __LINE__); \
         fail; \
@@ -44,6 +44,7 @@ typedef struct server_t {
     int thread_id;
     volatile int running;
     volatile int killed;
+    volatile int error;
 } server_t;
 
 void* server(void *arg);

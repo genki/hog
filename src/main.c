@@ -1,4 +1,4 @@
-#define HOG_VERSION "0.6.0"
+#define HOG_VERSION "0.6.1"
 #include "hog.h"
 
 hog_t hog = {0};
