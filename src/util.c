@@ -1,5 +1,5 @@
 #include "hog.h"
-#define MAX_RECEIVE   (32*1024*1024)
+#define MAX_RECEIVE   (64*1024*1024)
 
 int submit(int s, const void *buf, ssize_t len)
 {

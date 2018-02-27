@@ -70,16 +70,15 @@ void* server(void *arg)
         unsigned char cmd;
         if(receive(s->socket, &cmd, 1) != 0){
             switch(errno){
-            case 0: case EBADF: case ENOENT:
-                s->running = 0;
-                break;
-            case ETIMEDOUT: case EAGAIN:
+            case 0: case EBADF: case ENOENT: case EAGAIN: break;
+            case ETIMEDOUT:
                 if(retry_count++ > 3) break;
                 else continue;
             default:
                 fprintf(stderr, "Failed to recv cmd: %s\n", strerror(errno));
                 break;
             }
+            s->running = 0;
             break;
         }
         retry_count = 0;
