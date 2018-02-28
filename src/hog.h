@@ -14,14 +14,14 @@
 
 #define HOG_RECV(s, buf, len, fail) \
     if(((s)->error = receive((s)->socket, (buf), (len))) != 0){ \
-        fprintf(stderr, "Failed to recv %u bytes to %p (%s:%d)\n", \
-                (uint32_t)len, buf, __FILE__, __LINE__); \
+        fprintf(stderr, "Failed to recv %u bytes to %p (%s:%d) %d\n", \
+                (uint32_t)len, buf, __FILE__, __LINE__, (s)->error); \
         fail; \
     }
 #define HOG_SEND(s, buf, len, fail) \
     if(((s)->error = submit((s)->socket, (buf), (len))) != 0){ \
-        fprintf(stderr, "Failed to send %u bytes from %p (%s:%d)\n", \
-                (uint32_t)len, buf, __FILE__, __LINE__); \
+        fprintf(stderr, "Failed to send %u bytes from %p (%s:%d) %d\n", \
+                (uint32_t)len, buf, __FILE__, __LINE__, (s)->error); \
         fail; \
     }
 
