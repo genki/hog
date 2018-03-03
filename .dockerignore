@@ -1,4 +1,4 @@
 .*
-hog
-tmp
-test
+/tmp
+/test
+/tags

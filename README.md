@@ -12,7 +12,6 @@ Requirements
 
 Build project
 
-    cmake .
     make
 
 License: MIT

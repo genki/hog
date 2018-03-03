@@ -1,6 +1,6 @@
 #ifndef __HOG_H__
 #define __HOG_H__
-#include "config.h"
+#include "../config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -13,15 +13,15 @@
 #include <groonga.h>
 
 #define HOG_RECV(s, buf, len, fail) \
-    if(receive((s)->socket, (buf), (len)) != 0){ \
-        fprintf(stderr, "Failed to recv %u bytes to %p (%s:%d)\n", \
-                (uint32_t)len, buf, __FILE__, __LINE__); \
+    if(((s)->error = receive((s)->socket, (buf), (len))) != 0){ \
+        fprintf(stderr, "Failed to recv %u bytes to %p (%s:%d) %d\n", \
+                (uint32_t)len, buf, __FILE__, __LINE__, (s)->error); \
         fail; \
     }
 #define HOG_SEND(s, buf, len, fail) \
-    if(submit((s)->socket, (buf), (len)) != 0){ \
-        fprintf(stderr, "Failed to send %u bytes from %p (%s:%d)\n", \
-                (uint32_t)len, buf, __FILE__, __LINE__); \
+    if(((s)->error = submit((s)->socket, (buf), (len))) != 0){ \
+        fprintf(stderr, "Failed to send %u bytes from %p (%s:%d) %d\n", \
+                (uint32_t)len, buf, __FILE__, __LINE__, (s)->error); \
         fail; \
     }
 
@@ -44,6 +44,7 @@ typedef struct server_t {
     int thread_id;
     volatile int running;
     volatile int killed;
+    volatile int error;
 } server_t;
 
 void* server(void *arg);

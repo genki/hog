@@ -28,6 +28,7 @@ void* server(void *arg)
     char num_handlers = sizeof(cmd_handlers)/sizeof(cmd_handlers[0]);
     server_t *s = server_self = (server_t*)arg;
     s->running = 1;
+    s->error = 0;
     hog_t *hog = s->hog;
     if(hog->verbose){
         fprintf(stdout, "connection opening: %d\n", s->socket);
@@ -84,9 +85,15 @@ void* server(void *arg)
         if(cmd < num_handlers){
             if(hog->verbose){
                 fprintf(stdout, "exec %s: %d\n",
-                        cmd_handlers[cmd].name, s->socket);
+                    cmd_handlers[cmd].name, s->socket);
             }
             (cmd_handlers[cmd].handler)(s, &ctx);
+            if(s->error){
+                fprintf(stderr, "error: (%d: %s) in exec %s: %d\n",
+                    s->error, strerror(s->error),
+                    cmd_handlers[cmd].name, s->socket);
+                break;
+            }
         }else{
             fprintf(stderr, "Invalid cmd: %d\n", cmd);
             break;
@@ -102,6 +109,9 @@ cleanup:
             fprintf(stdout, "connection closing: %d\n", s->socket);
         }
         close(s->socket);
+        if(s->running){
+            fprintf(stderr, "connection aborted: %d\n", s->socket);
+        }
     }
     pthread_mutex_lock(&hog->mutex);
     pthread_t *self = &hog->threads[s->thread_id];

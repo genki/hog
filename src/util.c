@@ -1,4 +1,5 @@
 #include "hog.h"
+#define MAX_RECEIVE   (64*1024*1024)
 
 int submit(int s, const void *buf, ssize_t len)
 {
@@ -29,6 +30,7 @@ int submit_one(int s)
 
 int receive(int s, void *buf, ssize_t len)
 {
+    if(len > MAX_RECEIVE) return ENOBUFS;
     while(len > 0){
         int ret = recv(s, buf, len, 0);
         if(ret == 0) return EBADF;
