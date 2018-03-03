@@ -80,15 +80,17 @@ ths = []
     puts "** each"
     #submit s, "Foo", cmds["each"], 14, 0, -1
     write s, [cmds["each"]].pack('c') # PUT
-    write s, ["Foo".length].pack('N')
-    write s, "Foo"
-    write s, [14].pack('c*')
-    write s, [1, 1].pack('N*') # #kvs
+    write s, ["Foo.bar".length].pack('N')
+    write s, "Foo.bar"
+    write s, [14, 15].pack('c*')
+    write s, [0, -1].pack('N*') # #kvs
     loop do
       blen = read(s, 4).unpack('N').first
       break if blen == 0xFFFFFFFF
       key = read(s, blen)
-      puts key
+      blen = read(s, 4).unpack('N').first
+      value = read(s, blen)
+      puts "#{key} => #{value}"
     end
 
     #write s, [cmds["fin"]].pack('c')
