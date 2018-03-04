@@ -97,6 +97,14 @@ ths = []
       puts "#{key} => #{value}"
     end
 
+    # exec
+    write s, [cmds["exec"]].pack('c')
+    cmd = 'table_list'
+    write s, [cmd.bytesize].pack('N')
+    write s, cmd
+    blen = read(s, 4).unpack('N').first
+    puts read(s, blen)
+
     #write s, [cmds["fin"]].pack('c')
     #s.shutdown
     s.close
