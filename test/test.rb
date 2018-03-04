@@ -82,7 +82,11 @@ ths = []
     write s, [cmds["each"]].pack('c') # PUT
     write s, ["Foo.bar".length].pack('N')
     write s, "Foo.bar"
-    write s, [14, 15].pack('c*')
+    write s, [14].pack('c*')
+    write s, [1].pack('N') # 1 col
+    write s, [15].pack('c*') # type text
+    write s, ["bar".length].pack('N')
+    write s, "bar" # key bar
     write s, [0, -1].pack('N*') # #kvs
     loop do
       blen = read(s, 4).unpack('N').first

@@ -67,6 +67,7 @@ void hton_buf(void *buf, uint32_t len, char type)
 
 void *hog_alloc(void *buf, ssize_t len)
 {
+    if(buf == NULL && len == 0) return NULL;
     void *next = realloc(buf, len);
     if(next == NULL){
         if(len == 0) return next;
