@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2009-2017 Brazil
+  Copyright(C) 2009-2018 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -35,6 +35,7 @@
 #include "grn_logger.h"
 #include "grn_cache.h"
 #include "grn_expr.h"
+#include "grn_gen.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
@@ -1545,6 +1546,7 @@ grn_ctx_use(grn_ctx *ctx, grn_obj *db)
         grn_obj_get_info(ctx, db, GRN_INFO_ENCODING, &buf);
         ctx->encoding = *(grn_encoding *)GRN_BULK_HEAD(&buf);
         grn_obj_close(ctx, &buf);
+        ctx->rc = grn_gen_init(ctx, db);
       }
     }
   }
@@ -1633,7 +1635,8 @@ exception_filter(EXCEPTION_POINTERS *info)
     base_dir = grn_windows_base_dir();
     {
       char *current, *end;
-      const char *pdb_dir = "\\lib\\pdb";
+      /* TODO: Add more directories for plugins and so on. */
+      const char *bin_dir = "\\bin";
       current = search_path + strlen(search_path);
       end = current + sizeof(search_path) - 1;
       for (; *base_dir && current < end; base_dir++, current++) {
@@ -1647,7 +1650,7 @@ exception_filter(EXCEPTION_POINTERS *info)
         current--;
       }
       *current = '\0';
-      grn_strcat(search_path, sizeof(search_path), pdb_dir);
+      grn_strcat(search_path, sizeof(search_path), bin_dir);
     }
 
     SymSetSearchPath(process, search_path);
@@ -1680,7 +1683,7 @@ exception_filter(EXCEPTION_POINTERS *info)
 
   previous_address = 0;
   while (GRN_TRUE) {
-    DWORD address;
+    DWORD64 address;
     IMAGEHLP_MODULE64 module;
     char *buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
     SYMBOL_INFO *symbol = (SYMBOL_INFO *)buffer;
@@ -1726,11 +1729,10 @@ exception_filter(EXCEPTION_POINTERS *info)
     {
       const char *unknown = "(unknown)";
       GRN_LOG(ctx, GRN_LOG_CRIT,
-              "%s:%d:%d: %p: %.*s(): <%s>: <%s>",
+              "%s:%d:%d: %.*s(): <%s>: <%s>",
               (have_location ? line.FileName : unknown),
               (have_location ? line.LineNumber : -1),
               (have_location ? line_displacement : -1),
-              address,
               (have_symbol_name ? symbol->NameLen : strlen(unknown)),
               (have_symbol_name ? symbol->Name : unknown),
               (have_module_name ? module.ModuleName : unknown),

@@ -216,6 +216,8 @@ grn_db_create(grn_ctx *ctx, const char *path, grn_db_create_optarg *optarg)
   s->keys = NULL;
   s->specs = NULL;
   s->config = NULL;
+  s->cache = NULL;
+  s->gen = NULL;
 
   {
     grn_bool use_default_db_key = GRN_TRUE;
@@ -333,6 +335,8 @@ grn_db_open(grn_ctx *ctx, const char *path)
   s->keys = NULL;
   s->specs = NULL;
   s->config = NULL;
+  s->cache = NULL;
+  s->gen = NULL;
 
   {
     uint32_t type = grn_io_detect_type(ctx, path);
@@ -447,6 +451,9 @@ grn_db_close(grn_ctx *ctx, grn_obj *db)
 
   ctx_used_db = ctx->impl && ctx->impl->db == db;
   if (ctx_used_db) {
+    grn_gen_fin(ctx, s);
+  }
+  if (ctx_used_db) {
     grn_ctx_loader_clear(ctx);
     if (ctx->impl->parser) {
       grn_expr_parser_close(ctx);
@@ -490,15 +497,139 @@ grn_db_close(grn_ctx *ctx, grn_obj *db)
   GRN_FREE(s);
 
   if (ctx_used_db) {
-    grn_cache *cache;
-    cache = grn_cache_current_get(ctx);
-    if (cache) {
-      grn_cache_expire(cache, -1);
-    }
     ctx->impl->db = NULL;
   }
 
   GRN_API_RETURN(GRN_SUCCESS);
+}
+
+grn_rc
+grn_db_set_cache(grn_ctx *ctx, grn_obj *db, grn_cache *cache)
+{
+  GRN_API_ENTER;
+
+  if (!ctx) {
+    GRN_API_RETURN(GRN_INVALID_ARGUMENT);
+  }
+
+  if (!db) {
+    ERR(GRN_INVALID_ARGUMENT, "[db][cache][set] DB must not NULL");
+    GRN_API_RETURN(ctx->rc);
+  }
+
+  if (db->header.type != GRN_DB) {
+    ERR(GRN_INVALID_ARGUMENT, "[db][cache][set] must be DB: %d",
+        db->header.type);
+    GRN_API_RETURN(ctx->rc);
+  }
+
+  ((grn_db *)db)->cache = cache;
+
+  GRN_API_RETURN(GRN_SUCCESS);
+}
+
+grn_cache *
+grn_db_get_cache(grn_ctx *ctx, grn_obj *db)
+{
+  grn_cache *cache;
+
+  GRN_API_ENTER;
+
+  if (!ctx) {
+    GRN_API_RETURN(NULL);
+  }
+
+  if (!db) {
+    ERR(GRN_INVALID_ARGUMENT, "[db][cache][get] DB must not NULL");
+    GRN_API_RETURN(NULL);
+  }
+
+  if (db->header.type != GRN_DB) {
+    ERR(GRN_INVALID_ARGUMENT, "[db][cache][get] must be DB: %d",
+        db->header.type);
+    GRN_API_RETURN(NULL);
+  }
+
+  cache = ((grn_db *)db)->cache;
+
+  GRN_API_RETURN(cache);
+}
+
+static grn_obj *
+grn_alias_resolve(grn_ctx *ctx,
+                  const char *name,
+                  int name_size,
+                  grn_obj *alias_name_buffer,
+                  grn_bool get_object)
+{
+  grn_db *db;
+  grn_obj *alias_table = NULL;
+  grn_obj *alias_column = NULL;
+
+  db = (grn_db *)(ctx->impl->db);
+
+  if (name_size < 0) {
+    name_size = strlen(name);
+  }
+
+  while (GRN_TRUE) {
+    if (get_object) {
+      grn_id id;
+
+      id = grn_table_get(ctx, db->keys, name, name_size);
+      if (id) {
+        return  grn_ctx_at(ctx, id);
+      }
+    }
+
+    if (!alias_column) {
+      grn_id alias_column_id;
+      const char *alias_column_name;
+      uint32_t alias_column_name_size;
+
+      grn_config_get(ctx,
+                     "alias.column", -1,
+                     &alias_column_name, &alias_column_name_size);
+      if (!alias_column_name) {
+        break;
+      }
+      alias_column_id = grn_table_get(ctx,
+                                      db->keys,
+                                      alias_column_name,
+                                      alias_column_name_size);
+      if (!alias_column_id) {
+        break;
+      }
+      alias_column = grn_ctx_at(ctx, alias_column_id);
+      if (alias_column->header.type != GRN_COLUMN_VAR_SIZE) {
+        break;
+      }
+      if (alias_column->header.flags & GRN_OBJ_VECTOR) {
+        break;
+      }
+      if (DB_OBJ(alias_column)->range != GRN_DB_SHORT_TEXT) {
+        break;
+      }
+      alias_table = grn_ctx_at(ctx, alias_column->header.domain);
+      if (alias_table->header.type == GRN_TABLE_NO_KEY) {
+        break;
+      }
+    }
+
+    {
+      grn_id alias_id;
+      alias_id = grn_table_get(ctx, alias_table, name, name_size);
+      if (!alias_id) {
+        break;
+      }
+      GRN_BULK_REWIND(alias_name_buffer);
+      grn_obj_get_value(ctx, alias_column, alias_id, alias_name_buffer);
+      name = GRN_TEXT_VALUE(alias_name_buffer);
+      name_size = GRN_TEXT_LEN(alias_name_buffer);
+    }
+  }
+
+  return NULL;
 }
 
 grn_obj *
@@ -511,70 +642,14 @@ grn_ctx_get(grn_ctx *ctx, const char *name, int name_size)
   }
   GRN_API_ENTER;
   if (GRN_DB_P(db)) {
-    grn_db *s = (grn_db *)db;
-    grn_obj *alias_table = NULL;
-    grn_obj *alias_column = NULL;
     grn_obj alias_name_buffer;
 
-    if (name_size < 0) {
-      name_size = strlen(name);
-    }
     GRN_TEXT_INIT(&alias_name_buffer, 0);
-    while (GRN_TRUE) {
-      grn_id id;
-
-      id = grn_table_get(ctx, s->keys, name, name_size);
-      if (id) {
-        obj = grn_ctx_at(ctx, id);
-        break;
-      }
-
-      if (!alias_column) {
-        grn_id alias_column_id;
-        const char *alias_column_name;
-        uint32_t alias_column_name_size;
-
-        grn_config_get(ctx,
-                       "alias.column", -1,
-                       &alias_column_name, &alias_column_name_size);
-        if (!alias_column_name) {
-          break;
-        }
-        alias_column_id = grn_table_get(ctx,
-                                        s->keys,
-                                        alias_column_name,
-                                        alias_column_name_size);
-        if (!alias_column_id) {
-          break;
-        }
-        alias_column = grn_ctx_at(ctx, alias_column_id);
-        if (alias_column->header.type != GRN_COLUMN_VAR_SIZE) {
-          break;
-        }
-        if (alias_column->header.flags & GRN_OBJ_VECTOR) {
-          break;
-        }
-        if (DB_OBJ(alias_column)->range != GRN_DB_SHORT_TEXT) {
-          break;
-        }
-        alias_table = grn_ctx_at(ctx, alias_column->header.domain);
-        if (alias_table->header.type == GRN_TABLE_NO_KEY) {
-          break;
-        }
-      }
-
-      {
-        grn_id alias_id;
-        alias_id = grn_table_get(ctx, alias_table, name, name_size);
-        if (!alias_id) {
-          break;
-        }
-        GRN_BULK_REWIND(&alias_name_buffer);
-        grn_obj_get_value(ctx, alias_column, alias_id, &alias_name_buffer);
-        name = GRN_TEXT_VALUE(&alias_name_buffer);
-        name_size = GRN_TEXT_LEN(&alias_name_buffer);
-      }
-    }
+    obj = grn_alias_resolve(ctx,
+                            name,
+                            name_size,
+                            &alias_name_buffer,
+                            GRN_TRUE);
     GRN_OBJ_FIN(ctx, &alias_name_buffer);
   }
   GRN_API_RETURN(obj);
@@ -680,7 +755,7 @@ grn_db_clean(grn_ctx *ctx, grn_obj *db)
   }
 }
 
-static grn_rc
+grn_rc
 grn_db_clear_dirty(grn_ctx *ctx, grn_obj *db)
 {
   grn_obj *keys;
@@ -4665,8 +4740,31 @@ grn_obj_column_(grn_ctx *ctx, grn_obj *table, const char *name, unsigned int nam
     if (len) {
       buf[len++] = GRN_DB_DELIMITER;
       if (len + name_size <= GRN_TABLE_MAX_KEY_SIZE) {
+        grn_obj alias_name_buffer;
         grn_memcpy(buf + len, name, name_size);
-        column = grn_ctx_get(ctx, buf, len + name_size);
+        GRN_TEXT_INIT(&alias_name_buffer, 0);
+        column = grn_alias_resolve(ctx,
+                                   buf,
+                                   len + name_size,
+                                   &alias_name_buffer,
+                                   GRN_TRUE);
+        if (!column && GRN_TEXT_LEN(&alias_name_buffer) > 0) {
+          const size_t delimiter_len = 1;
+          const size_t table_name_len = len - delimiter_len;
+          const char *alias_name = GRN_TEXT_VALUE(&alias_name_buffer);
+          size_t alias_name_size = GRN_TEXT_LEN(&alias_name_buffer);
+          if (alias_name_size > len &&
+              alias_name[table_name_len] == GRN_DB_DELIMITER &&
+              strncmp(alias_name, buf, table_name_len) == 0) {
+            alias_name += len;
+            alias_name_size -= len;
+          }
+          column = grn_obj_get_accessor(ctx,
+                                        table,
+                                        alias_name,
+                                        alias_name_size);
+        }
+        GRN_OBJ_FIN(ctx, &alias_name_buffer);
       } else {
         ERR(GRN_INVALID_ARGUMENT, "name is too long");
       }
@@ -4682,8 +4780,10 @@ grn_obj_column(grn_ctx *ctx, grn_obj *table, const char *name, unsigned int name
   grn_obj *column = NULL;
   GRN_API_ENTER;
   if (GRN_OBJ_TABLEP(table)) {
-    if (grn_db_check_name(ctx, name, name_size) ||
-        !(column = grn_obj_column_(ctx, table, name, name_size))) {
+    if (grn_db_check_name(ctx, name, name_size) == GRN_SUCCESS) {
+      column = grn_obj_column_(ctx, table, name, name_size);
+    }
+    if (!column) {
       column = grn_obj_get_accessor(ctx, table, name, name_size);
     }
   } else if (GRN_ACCESSORP(table)) {
@@ -13567,7 +13667,8 @@ grn_table_sort_key_from_str_geo(grn_ctx *ctx, const char *str, unsigned int str_
         p = r;
       }
     }
-    GRN_FREE(tokbuf);
+    /* The cast is just for suppressing wrong Visual C++ warning. */
+    GRN_FREE((void *)tokbuf);
   }
   if (!ctx->rc && k - keys > 0) {
     *nkeys = k - keys;
@@ -13653,7 +13754,8 @@ grn_table_sort_key_from_str(grn_ctx *ctx, const char *str, unsigned int str_size
         p = r;
       }
     }
-    GRN_FREE(tokbuf);
+    /* The cast is just for suppressing wrong Visual C++ warning. */
+    GRN_FREE((void *)tokbuf);
   }
   if (!ctx->rc && k - keys > 0) {
     *nkeys = k - keys;

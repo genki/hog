@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 typedef struct {
-  const char *path;
+  char path[PATH_MAX];
 #ifdef WIN32
   HANDLE handle;
 #else /* WIN32 */
@@ -42,6 +42,10 @@ grn_bool grn_file_lock_acquire(grn_ctx *ctx,
                                const char *error_message_tag);
 void grn_file_lock_release(grn_ctx *ctx, grn_file_lock *file_lock);
 void grn_file_lock_fin(grn_ctx *ctx, grn_file_lock *file_lock);
+grn_bool grn_file_lock_exist(grn_ctx *ctx, grn_file_lock *file_lock);
+grn_bool grn_file_lock_takeover(grn_ctx *ctx, grn_file_lock *file_lock);
+void grn_file_lock_close(grn_ctx *ctx, grn_file_lock *file_lock);
+void grn_file_lock_exclusive(grn_ctx *ctx, grn_file_lock *file_lock);
 
 #ifdef __cplusplus
 }

@@ -21,7 +21,7 @@
 #include <string.h>
 #include "grn_db.h"
 #include "grn_str.h"
-//#include "grn_nfkc.h"
+#include "grn_nfkc.h"
 
 #ifndef _ISOC99_SOURCE
 #define _ISOC99_SOURCE

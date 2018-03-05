@@ -1826,6 +1826,7 @@ datavec_fin(grn_ctx *ctx, datavec *dv)
   if (dv[0].data) { GRN_FREE(dv[0].data); }
 }
 
+/* p is for PForDelta */
 size_t
 grn_p_encv(grn_ctx *ctx, datavec *dv, uint32_t dvlen, uint8_t *res)
 {
@@ -2936,6 +2937,7 @@ chunk_merge(grn_ctx *ctx, grn_ii *ii, buffer *sb, buffer_term *bt,
   if (ctx->rc == GRN_SUCCESS) {
     int j = 0;
     uint8_t *enc;
+    uint32_t encsize_probably_enough;
     uint32_t encsize;
     uint32_t np = posp - dv[ii->n_elements - 1].data;
     uint32_t f_s = (ndf < 3) ? 0 : USE_P_ENC;
@@ -2952,7 +2954,8 @@ chunk_merge(grn_ctx *ctx, grn_ii *ii, buffer *sb, buffer_term *bt,
       uint32_t f_p = ((np < 32) || (np <= (spos >> 13))) ? 0 : USE_P_ENC;
       dv[j].data_size = np; dv[j].flags = f_p|ODD;
     }
-    if ((enc = GRN_MALLOC((ndf * 4 + np) * 2))) {
+    encsize_probably_enough = (ndf * 4 + np) * 3;
+    if ((enc = GRN_MALLOC(encsize_probably_enough))) {
       encsize = grn_p_encv(ctx, dv, ii->n_elements, enc);
       chunk_flush(ctx, ii, cinfo, enc, encsize);
       if (ctx->rc == GRN_SUCCESS) {
@@ -4622,7 +4625,7 @@ grn_ii_update_one(grn_ctx *ctx, grn_ii *ii, grn_id tid, grn_ii_updspec *u, grn_h
               ERR(ctx->rc,
                   "[ii][update][one] failed to split a buffer: "
                   "<%.*s>: "
-                  "<%u>:<%u><%u>: "
+                  "<%u>:<%u>:<%u>: "
                   "segment:<%u>",
                   name_size, name,
                   u->rid, u->sid, tid,
@@ -4637,7 +4640,7 @@ grn_ii_update_one(grn_ctx *ctx, grn_ii *ii, grn_id tid, grn_ii_updspec *u, grn_h
             ERR(ctx->rc,
                 "[ii][update][one] failed to flush a buffer: "
                 "<%.*s>: "
-                "<%u>:<%u><%u>: "
+                "<%u>:<%u>:<%u>: "
                 "segment:<%u>",
                 name_size, name,
                 u->rid, u->sid, tid,
@@ -6383,13 +6386,13 @@ grn_ii_column_update(grn_ctx *ctx, grn_ii *ii, grn_id rid, unsigned int section,
         unsigned int old_n = 0, new_n = 0;
         if (old) {
           old_n = grn_vector_size(ctx, old);
+          GRN_OBJ_INIT(&old_elem, GRN_BULK, GRN_OBJ_DO_SHALLOW_COPY, old->header.domain);
         }
         if (new) {
           new_n = grn_vector_size(ctx, new);
+          GRN_OBJ_INIT(&new_elem, GRN_BULK, GRN_OBJ_DO_SHALLOW_COPY, new->header.domain);
         }
         max_n = (old_n > new_n) ? old_n : new_n;
-        GRN_OBJ_INIT(&old_elem, GRN_BULK, GRN_OBJ_DO_SHALLOW_COPY, old->header.domain);
-        GRN_OBJ_INIT(&new_elem, GRN_BULK, GRN_OBJ_DO_SHALLOW_COPY, new->header.domain);
         for (i = 0; i < max_n; i++) {
           grn_rc rc;
           grn_obj *old_p = NULL, *new_p = NULL;
@@ -6410,8 +6413,12 @@ grn_ii_column_update(grn_ctx *ctx, grn_ii *ii, grn_id rid, unsigned int section,
             break;
           }
         }
-        GRN_OBJ_FIN(ctx, &old_elem);
-        GRN_OBJ_FIN(ctx, &new_elem);
+        if (old) {
+          GRN_OBJ_FIN(ctx, &old_elem);
+        }
+        if (new) {
+          GRN_OBJ_FIN(ctx, &new_elem);
+        }
         return ctx->rc;
       }
     }
@@ -12317,7 +12324,8 @@ grn_ii_builder_append_obj(grn_ctx *ctx, grn_ii_builder *builder,
         if (sec->length == 0) {
           continue;
         }
-        if (builder->tokenizer) {
+        if ((builder->ii->header->flags & GRN_OBJ_WITH_SECTION) &&
+            builder->tokenizer) {
           sid = i + 1;
         }
         rc = grn_ii_builder_append_value(ctx, builder, rid, sid, sec->weight,

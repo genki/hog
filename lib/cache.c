@@ -151,14 +151,10 @@ grn_cache_open_persistent(grn_ctx *ctx,
   cache->impl.persistent.timeout = 1000;
 
   if (base_path) {
+    struct stat stat_buffer;
+
     grn_snprintf(lock_path_buffer, PATH_MAX, PATH_MAX, "%s.lock", base_path);
     grn_file_lock_init(ctx, &file_lock, lock_path_buffer);
-  } else {
-    grn_file_lock_init(ctx, &file_lock, NULL);
-  }
-
-  if (base_path) {
-    struct stat stat_buffer;
 
     grn_snprintf(keys_path_buffer, PATH_MAX, PATH_MAX, "%s.keys", base_path);
     grn_snprintf(values_path_buffer, PATH_MAX, PATH_MAX, "%s.values", base_path);
@@ -297,8 +293,10 @@ grn_cache_open_persistent(grn_ctx *ctx,
   }
 
 exit :
-  grn_file_lock_release(ctx, &file_lock);
-  grn_file_lock_fin(ctx, &file_lock);
+  if (base_path) {
+    grn_file_lock_release(ctx, &file_lock);
+    grn_file_lock_fin(ctx, &file_lock);
+  }
 }
 
 static grn_cache *
@@ -411,6 +409,9 @@ grn_cache_current_set(grn_ctx *ctx, grn_cache *cache)
 grn_cache *
 grn_cache_current_get(grn_ctx *ctx)
 {
+  if (ctx && ctx->impl && ctx->impl->db && ((grn_db *)ctx->impl->db)->cache) {
+    return ((grn_db *)ctx->impl->db)->cache;
+  }
   return grn_cache_current;
 }
 

@@ -20,7 +20,7 @@
 
 #include "grn_normalizer.h"
 #include "grn_string.h"
-//#include "grn_nfkc.h"
+#include "grn_nfkc.h"
 #include <groonga/normalizer.h>
 #include <groonga/tokenizer.h>
 

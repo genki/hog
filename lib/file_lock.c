@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2017 Brazil
+  Copyright(C) 2017-2018 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
 # include <share.h>
 #else /* WIN32 */
 # include <sys/types.h>
+# include <sys/file.h>
 # include <fcntl.h>
 #endif /* WIN32 */
 
@@ -42,7 +43,7 @@ grn_file_lock_init(grn_ctx *ctx,
                    grn_file_lock *file_lock,
                    const char *path)
 {
-  file_lock->path = path;
+  grn_strcpy(file_lock->path, PATH_MAX, path);
 #ifdef WIN32
   file_lock->handle = INVALID_HANDLE_VALUE;
 #else /* WIN32 */
@@ -58,10 +59,6 @@ grn_file_lock_acquire(grn_ctx *ctx,
 {
   int i;
   int n_lock_tries = timeout;
-
-  if (!file_lock->path) {
-    return GRN_TRUE;
-  }
 
   for (i = 0; i < n_lock_tries; i++) {
 #ifdef WIN32
@@ -109,7 +106,7 @@ grn_file_lock_release(grn_ctx *ctx, grn_file_lock *file_lock)
 
   file_lock->fd = -1;
 #endif /* WIN32 */
-  file_lock->path = NULL;
+  grn_strcpy(file_lock->path, PATH_MAX, "");
 }
 
 void
@@ -118,4 +115,63 @@ grn_file_lock_fin(grn_ctx *ctx, grn_file_lock *file_lock)
   if (!GRN_FILE_LOCK_IS_INVALID(file_lock)) {
     grn_file_lock_release(ctx, file_lock);
   }
+}
+
+grn_bool
+grn_file_lock_exist(grn_ctx *ctx, grn_file_lock *file_lock)
+{
+#ifdef WIN32
+  return GetFileAttributes(file_lock->path) != INVALID_FILE_ATTRIBUTES;
+#else
+  return access(file_lock->path, F_OK) == 0;
+#endif
+}
+
+grn_bool
+grn_file_lock_takeover(grn_ctx *ctx, grn_file_lock *file_lock)
+{
+#ifdef WIN32
+  file_lock->handle = OpenFile(file_lock->path, NULL, OF_READWRITE);
+#else
+  file_lock->fd = open(file_lock->path, O_RDWR);
+#endif
+  if (GRN_FILE_LOCK_IS_INVALID(file_lock)) return GRN_FALSE;
+#ifdef WIN32
+  if (!LockFileEx(file_lock->handle,
+      LOCKFILE_EXCLUSIVE_LOCK|LOCKFILE_FAIL_IMMEDIATELY,
+      0, TESTSTRLEN, 0, 0)) {
+#else
+  if (flock(file_lock->fd, LOCK_EX|LOCK_NB) != 0) {
+#endif
+    grn_file_lock_close(ctx, file_lock);
+    return GRN_FALSE;
+  }
+  return GRN_TRUE;
+}
+
+void
+grn_file_lock_close(grn_ctx *ctx, grn_file_lock *file_lock)
+{
+  if (GRN_FILE_LOCK_IS_INVALID(file_lock)) {
+    return;
+  }
+#ifdef WIN32
+  CloseHandle(file_lock->handle);
+  file_lock->handle = INVALID_HANDLE_VALUE;
+#else /* WIN32 */
+  close(file_lock->fd);
+  file_lock->fd = -1;
+#endif /* WIN32 */
+  grn_strcpy(file_lock->path, PATH_MAX, "");
+}
+
+void
+grn_file_lock_exclusive(grn_ctx *ctx, grn_file_lock *file_lock)
+{
+#ifdef WIN32
+  LockFileEx(file_lock->handle,
+      LOCKFILE_EXCLUSIVE_LOCK, 0, TESTSTRLEN, 0, 0);
+#else
+  flock(file_lock->fd, LOCK_EX);
+#endif
 }

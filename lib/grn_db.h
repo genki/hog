@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 2 -*- */
 /*
-  Copyright(C) 2009-2016 Brazil
+  Copyright(C) 2009-2018 Brazil
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@ extern "C" {
 
 typedef struct _grn_db grn_db;
 typedef struct _grn_proc grn_proc;
+typedef struct _grn_gen grn_gen;
 
 struct _grn_db {
   grn_db_obj obj;
@@ -48,6 +49,8 @@ struct _grn_db {
   grn_hash *config;
   grn_tiny_array values;
   grn_critical_section lock;
+  grn_cache *cache;
+  grn_gen *gen;
 };
 
 #define GRN_SERIALIZED_SPEC_INDEX_SPEC   0
@@ -127,6 +130,7 @@ void grn_db_generate_pathname(grn_ctx *ctx,
                               grn_obj *db,
                               grn_id id,
                               char *buffer);
+grn_rc grn_db_clear_dirty(grn_ctx *ctx, grn_obj *db);
 
 grn_rc _grn_table_delete_by_id(grn_ctx *ctx, grn_obj *table, grn_id id,
                                grn_table_delete_optarg *optarg);
