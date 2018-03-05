@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
     const char *log_level = NULL;
     int port = 18618;
     int max_conn = 1024;
-    int lock_clear = 0;
     int lock_timeout = 10000; // in [ms]
     hog.verbose = 0;
 
@@ -56,7 +55,6 @@ int main(int argc, char *argv[])
             case 'c': max_conn = atoi(argv[++i]); break;
             case 't': lock_timeout = atoi(argv[++i]); break;
             case 'V': hog.verbose = 1; break;
-            case 'u': lock_clear = 1; break;
             case 'l': log_path = argv[++i]; break;
             case 'L': log_level = argv[++i]; break;
             case 'v':
@@ -117,6 +115,7 @@ int main(int argc, char *argv[])
 
     // init groonga
     grn_init();
+    grn_gen_enable();
     grn_set_lock_timeout(lock_timeout);
     atexit(cleanup);
     hog.ctx = hog_alloc(NULL, sizeof(grn_ctx));
@@ -132,11 +131,6 @@ int main(int argc, char *argv[])
     if(hog.db == NULL){
         fprintf(stderr, "Failed to open db: %s\n", db_path);
         goto cleanup;
-    }
-
-    // lock_clear
-    if(lock_clear){
-        grn_obj_clear_lock(hog.ctx, hog.db);
     }
 
     // accept loop
