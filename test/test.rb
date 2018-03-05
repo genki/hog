@@ -82,7 +82,11 @@ ths = []
     write s, [cmds["each"]].pack('c') # PUT
     write s, ["Foo.bar".length].pack('N')
     write s, "Foo.bar"
-    write s, [14, 15].pack('c*')
+    write s, [14].pack('c*')
+    write s, [1].pack('N') # 1 col
+    write s, [15].pack('c*') # type text
+    write s, ["bar".length].pack('N')
+    write s, "bar" # key bar
     write s, [0, -1].pack('N*') # #kvs
     loop do
       blen = read(s, 4).unpack('N').first
@@ -92,6 +96,14 @@ ths = []
       value = read(s, blen)
       puts "#{key} => #{value}"
     end
+
+    # exec
+    write s, [cmds["exec"]].pack('c')
+    cmd = 'table_list'
+    write s, [cmd.bytesize].pack('N')
+    write s, cmd
+    blen = read(s, 4).unpack('N').first
+    puts read(s, blen)
 
     #write s, [cmds["fin"]].pack('c')
     #s.shutdown

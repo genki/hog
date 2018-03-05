@@ -21,6 +21,7 @@ static struct {
     {"set", hog_set},
     {"query", hog_query},
     {"each", hog_each},
+    {"exec", hog_exec},
 };
 
 void* server(void *arg)
