@@ -1,6 +1,6 @@
 default: image
 
-TAG := s21g/hog
+TAG := s21g/hog:0.8.3
 lib_c_SOURCES := $(shell find lib -type f -name "*.c")
 lib_cc_SOURCES := $(shell find lib -type f -name "*.cpp")
 hog_SOURCES := $(shell find src -type f -name "*.c")
