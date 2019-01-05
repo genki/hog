@@ -64,7 +64,7 @@ ths = []
     types = [14, 15]
 
     now = Time.now
-    1000.times do
+    10.times do
       submit_w s, "Foo.bar", cmds["put"], types, "hello" => "world"
       submit s, "Foo.bar", cmds["get"], types, ["hello"]
       len = read(s, 4).unpack('N').first
@@ -78,23 +78,30 @@ ths = []
     submit_w s, "Foo.bar", cmds["put"], types, "hello" => "world"
     submit_w s, "Foo.bar", cmds["put"], types, "foo" => "bar!"
     puts "** each"
+
     #submit s, "Foo", cmds["each"], 14, 0, -1
     write s, [cmds["each"]].pack('c') # PUT
-    write s, ["Foo.bar".length].pack('N')
-    write s, "Foo.bar"
-    write s, [14].pack('c*')
+    write s, ["Foo".length].pack('N')
+    write s, "Foo"
+    write s, [14].pack('c*') # short_text
     write s, [1].pack('N') # 1 col
     write s, [15].pack('c*') # type text
     write s, ["bar".length].pack('N')
     write s, "bar" # key bar
     write s, [0, -1].pack('N*') # #kvs
-    loop do
-      blen = read(s, 4).unpack('N').first
-      break if blen == 0xFFFFFFFF
-      key = read(s, blen)
-      blen = read(s, 4).unpack('N').first
-      value = read(s, blen)
-      puts "#{key} => #{value}"
+    catch :exit do
+      loop do
+        cnt = 2
+        write s, [cnt].pack('N')
+        cnt.times do
+          blen = read(s, 4).unpack('N').first
+          throw :exit if blen == 0xFFFFFFFF
+          key = read(s, blen)
+          blen = read(s, 4).unpack('N').first
+          value = read(s, blen)
+          puts "#{key} => #{value}"
+        end
+      end
     end
 
     # exec

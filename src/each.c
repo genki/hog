@@ -44,7 +44,13 @@ void hog_each(server_t *s, grn_ctx *ctx)
     // open cursor
     grn_table_cursor *cursor = grn_table_cursor_open(ctx, table,
             NULL, 0, NULL, 0, offset, limit, GRN_CURSOR_BY_ID); 
-    if(cursor) for(;;) {
+    if(cursor) for(uint32_t count = 0;; --count) {
+        if(count == 0){
+            // recv count to send in next batch
+            HOG_RECV(s, &count, sizeof(count), break);
+            count = ntohl(count);
+            if(count == 0) break;
+        }
         grn_id id = grn_table_cursor_next(ctx, cursor);
         if(id == GRN_ID_NIL) break;
         void *key;
