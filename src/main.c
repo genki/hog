@@ -1,4 +1,3 @@
-#define HOG_VERSION "0.8.1"
 #include "hog.h"
 
 hog_t hog = {0};

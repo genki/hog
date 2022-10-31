@@ -1,6 +1,7 @@
 default: image
 
-TAG := s21g/hog:0.8.6
+VERSION := 0.8.7
+TAG := s21g/hog:$(VERSION)
 lib_c_SOURCES := $(shell find lib -type f -name "*.c")
 lib_cc_SOURCES := $(shell find lib -type f -name "*.cpp")
 hog_SOURCES := $(shell find src -type f -name "*.c")
@@ -11,7 +12,7 @@ OBJECTS := $(c_OBJECTS) $(cc_OBJECTS)
 CC := gcc
 CXX := g++
 
-CFLAGS := -g -O2 -I include \
+CFLAGS := -g -O2 -I include -DHOG_VERSION=\"$(VERSION)\" \
 	-fPIE -fstack-protector-strong -Wformat -Werror=format-security
 LDFLAGS := -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now \
 	-fPIE -pie -lgroonga
@@ -26,16 +27,14 @@ hog: $(OBJECTS)
 
 build: build/ok
 build/ok: build/Dockerfile
-	docker build -t hog-build build
-	touch build/ok
+	docker build --iidfile build/ok -t hog-build build
 build/hog: $(SOURCES)
 	docker run --rm -v $(CURDIR):/mnt hog-build make hog
 	mv ./hog build/hog
 
-image: image.ok
-image.ok: Dockerfile build/ok build/hog
-	docker build -t $(TAG) .
-	touch image.ok
+image: ok
+ok: Dockerfile build/ok build/hog
+	DOCKER_BUILDKIT=1 docker build --iidfile ok -t $(TAG) .
 
 .PHONY: clean run push tags
 
