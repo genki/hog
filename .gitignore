@@ -1,4 +1,5 @@
 .DS_Store
+/.virtfs_metadata
 /build/hog
 /tmp
 *.o

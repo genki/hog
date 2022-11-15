@@ -1,6 +1,6 @@
 default: image
 
-VERSION := 0.8.7
+VERSION := $(shell cat VERSION)
 TAG := s21g/hog:$(VERSION)
 lib_c_SOURCES := $(shell find lib -type f -name "*.c")
 lib_cc_SOURCES := $(shell find lib -type f -name "*.cpp")
@@ -21,6 +21,7 @@ $(c_OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 $(cc_OBJECTS): %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
+src/main.c: VERSION
 
 hog: $(OBJECTS)
 	$(CXX) $^ $(LDFLAGS) -o $@
@@ -28,7 +29,7 @@ hog: $(OBJECTS)
 build: build/ok
 build/ok: build/Dockerfile
 	docker build --iidfile build/ok -t hog-build build
-build/hog: $(SOURCES)
+build/hog: $(SOURCES) VERSION
 	docker run --rm -v $(CURDIR):/mnt hog-build make hog
 	mv ./hog build/hog
 
@@ -43,7 +44,7 @@ run: build/ok
 		--entrypoint build/hog hog-build -l /dev/stdout -L debug tmp/db/test
 clean:
 	rm -f $(OBJECTS) build/hog
-push: image.ok
+push: ok
 	docker push $(TAG)
 tags:
 	ctags -R
