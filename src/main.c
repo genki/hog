@@ -139,6 +139,7 @@ int main(int argc, char *argv[])
     }
 
     // accept loop
+    fprintf(stdout, "hog server started accepting connections...\n");
     while(1){
         int c = accept(hog.socket, (struct sockaddr*)&caddr, &len);
         if(c < 0) break;

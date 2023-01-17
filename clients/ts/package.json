@@ -1,0 +1,29 @@
+{
+  "name": "hog-client",
+  "version": "1.0.0",
+  "description": "TypeScript client for Hog",
+  "main": "dist/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "npx vitest run",
+    "prebuild": "rimraf dist",
+    "build": "run-p build:*",
+    "build:common": "tsc",
+    "build:esm": "tsc -p tsconfig.esm.json"
+  },
+  "keywords": [],
+  "author": "Genki Takiuchi <genki@s21g.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.11.18",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^4.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.4",
+    "vitest": "^0.27.2"
+  }
+}
