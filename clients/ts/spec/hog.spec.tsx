@@ -107,7 +107,7 @@ async function setupFixture() {
 async function startHog() {
   // Read version number from ../../VERSION
   const ver = fs.readFileSync('../../VERSION', 'utf-8').trim();
-  let cp = spawn('docker', [ 'run', '--rm', '--name', 'twvids-hog',
+  let cp = spawn('docker', [ 'run', '--rm', '--name', 'tsclient-hog',
     '-p', '18618:18618', '-v', `${process.cwd()}/tmp/groonga:/tmp`,
     `s21g/hog:${ver}`, '/tmp/test', ]);
   // wait for the message 'hog server started accepting' to be output.
@@ -121,5 +121,5 @@ async function startHog() {
 }
 
 async function stopHog() {
-  await execSync('docker rm -f twvids-hog');
+  await execSync('docker rm -f tsclient-hog');
 }
