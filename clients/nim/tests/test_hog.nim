@@ -1,10 +1,13 @@
 import unittest
 import os, asyncdispatch
-import std/osproc
+import osproc, streams
 import sequtils, options
 import hog
 
+const PORT = 18618
+
 suite "Hog":
+  os.removeDir("tmp/groonga")
   discard ["tmp","tmp/groonga"].map(existsOrCreateDir)
   # create fixture file to load
   let f = open("tmp/groonga/setup.grn", fmWrite)
@@ -31,20 +34,27 @@ suite "Hog":
     "-n", "--file", "/tmp/setup.grn", "/tmp/test"], options={poUsePath})
 
   # run Hog server
+  echo "start hog server"
   let pHog = startProcess("docker", args=["run", "--rm", "-v",
-    getCurrentDir() / "tmp/groonga:/tmp", "-p", "18618:18618",
+    getCurrentDir() / "tmp/groonga:/tmp", "-p", $PORT & ":" & $PORT,
     "s21g/hog:0.9.0", "/tmp/test"], options={poUsePath})
+  defer:
+    echo "stop hog server"
+    pHog.terminate()
 
   # wait for Hog server to start and connect
+  echo "wait for hog server to start"
   let hog = Hog.new()
   let connect = proc() {.async.} =
     while true:
       try:
-        await hog.connect("127.0.0.1", 18618)
+        await hog.connect("127.0.0.1", PORT)
         break
       except OSError:
-        sleep(100)
+        await sleepAsync(100)
   waitFor connect()
+  defer: hog.close()
+  echo "hog server started"
 
   test "can get instance and ping":
     check hog is Hog
@@ -55,5 +65,19 @@ suite "Hog":
     let names = waitFor hog.mget("User.name", "short_text", "short_text", keys)
     check names == @[some("Alice"), some("Bob"), some("Carol")]
 
-  hog.close()
-  pHog.terminate()
+  #test "can add records":
+  #  check waitFor hog.mput("User.name", "short_text", "short_text",
+  #    @["dave", "Dave", "eve", "Eve"])
+  #  let names = waitFor hog.mget("User.name", "short_text", "short_text",
+  #    @["dave", "eve"])
+  #  check names == @[some("Dave"), some("Eve")]
+  #  var buf = newSeq[byte](4)
+  #  buf[3] = 30
+  #  check waitFor hog.store("User.name", "short_text", "dove",
+  #    @[("uint32", "age", buf)])
+  #  let age = waitFor hog.get("User.age", "short_text", "uint32", "dove")
+  #  case age:
+  #  of Some(@x):
+  #    check newStringStream(x).readUInt32() == 30
+  #  of None():
+  #    check false

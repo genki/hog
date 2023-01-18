@@ -14,10 +14,14 @@ const TYPES: Table[string,int] = {
 
 proc readUint8(hog:Hog): Future[uint8] {.async.} =
   let data = await hog.socket.recv(1)
+  if data.len == 0:
+    raise newException(ValueError, "Invalid data length")
   return data[0].uint8
 
 proc readUint32BE(hog:Hog): Future[uint32] {.async.} =
   let data = await hog.socket.recv(4)
+  if data.len != 4:
+    raise newException(ValueError, "Invalid data length")
   return (data[0].uint32 shl 24) or (data[1].uint32 shl 16) or
     (data[2].uint32 shl 8) or data[3].uint32
 
@@ -49,19 +53,23 @@ proc ping*(hog:Hog): Future[bool] {.async.} =
   let pong = await hog.socket.recv(1)
   return pong[0].uint8 == 1
 
-proc command*(hog:Hog, cmd:string, column:string, tio:seq[string],
+proc bufFor(hog:Hog, cmd:string, column:string, tio:seq[string]
+): seq[byte] =
+  result = newSeq[byte]()
+  result.add(hog.commands[cmd].byte)
+  result.add(uint32BE(column.len.uint32))
+  result.add(column.toOpenArrayByte(0, column.len-1))
+  for t in tio:
+    result.add(TYPES[t].byte)
+
+proc command(hog:Hog, cmd:string, column:string, tio:seq[string],
   keys_kvs:seq[string], kvs:bool = false
 ) {.async.} =
   let num = if kvs: keys_kvs.len shr 1 else: keys_kvs.len
   if (kvs and num*2 != keys_kvs.len):
     raise newException(ValueError, "Invalid number of keys/values")
   # prepare string stream
-  var buf = newSeq[byte]()
-  buf.add(hog.commands[cmd].byte)
-  buf.add(uint32BE(column.len.uint32))
-  buf.add(column.toOpenArrayByte(0, column.len-1))
-  for t in tio:
-    buf.add(TYPES[t].byte)
+  var buf = hog.bufFor(cmd, column, tio)
   buf.add(uint32BE(num.uint32))
   for kv in keys_kvs:
     buf.add(uint32BE(kv.len.uint32))
@@ -76,3 +84,27 @@ proc mget*(hog:Hog, column:string, tin:string, tout:string, keys:seq[string]
     let len = await hog.readUint32BE()
     if len > 0: result[i] = some(await hog.socket.recv(int(len)))
     else: result[i] = none(string)
+proc get*(hog:Hog, column:string, tin:string, tout:string, key:string
+): Future[Option[string]] {.async.} =
+  return (await hog.mget(column, tin, tout, @[key]))[0]
+
+proc mput*(hog:Hog, column:string, tin:string, tout:string, kvs:seq[string]
+): Future[bool] {.async.} =
+  await hog.command("put", column, @[tin, tout], kvs, true)
+  return (await hog.readUint8()) == 1
+
+proc store*(hog:Hog, column:string, tin:string, key:string,
+  values:seq[(string, string, seq[byte])]
+): Future[bool] {.async.} =
+  var buf = hog.bufFor("store", column, @[tin])
+  buf.add(uint32BE(key.len.uint32))
+  buf.add(key.toOpenArrayByte(0, key.len-1))
+  buf.add(uint32BE(values.len.uint32))
+  for (tin, key, value) in values:
+    buf.add(TYPES[tin].byte)
+    buf.add(uint32BE(key.len.uint32))
+    buf.add(key.toOpenArrayByte(0, key.len-1))
+    buf.add(uint32BE(value.len.uint32))
+    buf.add(value)
+  await hog.socket.send(addr(buf[0]), buf.len)
+  return (await hog.readUint8()) == 1
