@@ -1,8 +1,0 @@
-/testresults
-/outputGotten.txt
-/tmp
-/tags
-/nimcache
-/tests
-!/tests/config.nims
-!/tests/**/*.nim
