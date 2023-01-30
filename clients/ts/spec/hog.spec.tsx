@@ -43,6 +43,11 @@ describe('[Hog]', () => {
     expect(count).toEqual(3);
   });
 
+  it('shows table list', async () => {
+    let tables = await hog.exec('table_list');
+    expect(tables).toEqual({});
+  });
+
   it('can mget records', async () => {
     let keys = ['alice', 'bob', 'carol'].map(toBuf);
     let names = await hog.mget('User.name', 'short_text', 'short_text', keys);

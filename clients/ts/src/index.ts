@@ -100,6 +100,12 @@ export default class Hog {
     return (await this.pop(4)).readUInt32BE(0);
   }
 
+  async exec(cmd:string): Promise<string> {
+    await this.command("exec", cmd);
+    let len = (await this.pop(4)).readUInt32BE(0);
+    return (await this.pop(len)).toString();
+  }
+
   // returns [total, count, [keys]]
   async query(column:string, tin:string, query:string,
     sortby:string = "_id", offset:number = 0, limit:number = -1
@@ -144,14 +150,14 @@ export default class Hog {
   }
 
   private async command(
-    cmd: string, column:string, tio:string[] = [],
+    cmd: string, column_cmd:string, tio:string[] = [],
     keys_kvs:Buffer[] = [], kvs:boolean = false
   ): Promise<void> {
     let num = kvs ? keys_kvs.length / 2 : keys_kvs.length;
     if (kvs && num * 2 != keys_kvs.length) {
       throw new Error("keys and values must be in pairs");
     }
-    let bufs:Buffer[] = await this.bufsFor(cmd, column, tio);
+    let bufs:Buffer[] = await this.bufsFor(cmd, column_cmd, tio);
     if (keys_kvs.length > null) {
       bufs.push(numAsBuffer(num, 4));
       for (const kv of keys_kvs) {
