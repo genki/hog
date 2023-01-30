@@ -103,7 +103,7 @@ export default class Hog {
   async exec(cmd:string): Promise<string> {
     await this.command("exec", cmd);
     let len = (await this.pop(4)).readUInt32BE(0);
-    return (await this.pop(len)).toString();
+    return JSON.parse((await this.pop(len)).toString());
   }
 
   // returns [total, count, [keys]]

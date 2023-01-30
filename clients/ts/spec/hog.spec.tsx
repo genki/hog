@@ -45,7 +45,9 @@ describe('[Hog]', () => {
 
   it('shows table list', async () => {
     let tables = await hog.exec('table_list');
-    expect(tables).toEqual({});
+    let names = tables.map((t) => t[1]);
+    expect(names).toContain('User');
+    expect(names).toContain('Terms');
   });
 
   it('can mget records', async () => {
