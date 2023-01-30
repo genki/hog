@@ -158,7 +158,7 @@ export default class Hog {
       throw new Error("keys and values must be in pairs");
     }
     let bufs:Buffer[] = await this.bufsFor(cmd, column_cmd, tio);
-    if (keys_kvs.length > null) {
+    if (keys_kvs.length > 0) {
       bufs.push(numAsBuffer(num, 4));
       for (const kv of keys_kvs) {
         bufs.push(numAsBuffer(kv.length, 4));
