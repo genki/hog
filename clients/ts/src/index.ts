@@ -95,6 +95,11 @@ export default class Hog {
     return await this.mdelete(column, tin, [key]);
   }
 
+  async count(column:string): Promise<number> {
+    await this.command("count", column);
+    return (await this.pop(4)).readUInt32BE(0);
+  }
+
   // returns [total, count, [keys]]
   async query(column:string, tin:string, query:string,
     sortby:string = "_id", offset:number = 0, limit:number = -1
@@ -139,18 +144,20 @@ export default class Hog {
   }
 
   private async command(
-    cmd: string, column:string, tio:string[],
-    keys_kvs:Buffer[], kvs:boolean = false
+    cmd: string, column:string, tio:string[] = [],
+    keys_kvs:Buffer[] = [], kvs:boolean = false
   ): Promise<void> {
     let num = kvs ? keys_kvs.length / 2 : keys_kvs.length;
     if (kvs && num * 2 != keys_kvs.length) {
       throw new Error("keys and values must be in pairs");
     }
     let bufs:Buffer[] = await this.bufsFor(cmd, column, tio);
-    bufs.push(numAsBuffer(num, 4));
-    for (const kv of keys_kvs) {
-      bufs.push(numAsBuffer(kv.length, 4));
-      bufs.push(kv);
+    if (keys_kvs.length > null) {
+      bufs.push(numAsBuffer(num, 4));
+      for (const kv of keys_kvs) {
+        bufs.push(numAsBuffer(kv.length, 4));
+        bufs.push(kv);
+      }
     }
     await this.send(Buffer.concat(bufs));
   }

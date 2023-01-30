@@ -38,6 +38,11 @@ describe('[Hog]', () => {
     expect(await hog.ping()).toBe(true);
   });
 
+  it('counts records', async () => {
+    let count = await hog.count('User');
+    expect(count).toEqual(3);
+  });
+
   it('can mget records', async () => {
     let keys = ['alice', 'bob', 'carol'].map(toBuf);
     let names = await hog.mget('User.name', 'short_text', 'short_text', keys);
