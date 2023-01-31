@@ -108,7 +108,7 @@ export default class Hog {
 
   // returns [total, count, [keys]]
   async query(column:string, tin:string, query:string,
-    sortby:string = "_id", offset:number = 0, limit:number = -1
+    {sortby = "_id", offset = 0, limit = -1}
   ): Promise<[number,number,Buffer[]]> {
     let bufs:Buffer[] = await this.bufsFor("query", column, [tin]);
     bufs.push(numAsBuffer(Buffer.byteLength(query), 4));

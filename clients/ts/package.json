@@ -1,6 +1,6 @@
 {
   "name": "hog-client",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "TypeScript client for Hog",
   "main": "dist/index.js",
   "module": "dist/esm/index.js",

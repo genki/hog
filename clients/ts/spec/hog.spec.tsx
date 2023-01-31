@@ -72,8 +72,8 @@ describe('[Hog]', () => {
 
   it('can query records', async () => {
     let [total, count, keys] =
-      await hog.query('User.name', 'short_text', 'Alice');
-    expect(total).toEqual(1);
+      await hog.query('User.name', 'short_text', 'a', {offset:0, limit:1});
+    expect(total).toEqual(2);
     expect(count).toEqual(1);
     expect(keys[0].toString("utf-8")).toEqual('alice');
   });
